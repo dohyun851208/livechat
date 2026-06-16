@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchChatState, postChatAction } from './chat-api-client';
+import {
+  CHAT_POLL_INTERVAL_MS,
+  shouldPollChat,
+  type ChatPollingMode,
+} from './chat-polling';
 import type { ChatMessage, ChatSnapshot, CommandResult } from './types';
 
 const EMPTY_SNAPSHOT: ChatSnapshot = {
@@ -28,24 +33,24 @@ export type ChatRoom = {
   readonly toggleChatActive: (active: boolean) => Promise<CommandResult>;
 };
 
-export function useChatRoom(): ChatRoom {
+export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
   const [snapshot, setSnapshot] = useState<ChatSnapshot>(EMPTY_SNAPSHOT);
   const [isConnected, setIsConnected] = useState(false);
   const [lastError, setLastError] = useState('');
   const sessionIdRef = useRef<string | null>(null);
   const adminTokenRef = useRef<string | null>(null);
 
-  const applySnapshot = useCallback((nextSnapshot: ChatSnapshot) => {
-    setSnapshot(nextSnapshot);
+  const applySuccessfulResponse = useCallback((response: SuccessfulApiResponse) => {
+    setSnapshot(response.state);
+    setIsConnected(true);
+    setLastError('');
   }, []);
 
   const refresh = useCallback(async () => {
     try {
       const response = await fetchChatState();
       if (response.ok === true) {
-        applySnapshot(response.state);
-        setIsConnected(true);
-        setLastError('');
+        applySuccessfulResponse(response);
       } else {
         setIsConnected(false);
         setLastError(response.error);
@@ -54,17 +59,25 @@ export function useChatRoom(): ChatRoom {
       setIsConnected(false);
       setLastError(toErrorMessage(error));
     }
-  }, [applySnapshot]);
+  }, [applySuccessfulResponse]);
+
+  const pollingEnabled = shouldPollChat(pollingMode, snapshot.chatActive);
 
   useEffect(() => {
+    if (!pollingEnabled) {
+      setIsConnected(false);
+      setLastError('');
+      return undefined;
+    }
+
     void refresh();
     const intervalId = window.setInterval(() => {
       void refresh();
-    }, 1000);
+    }, CHAT_POLL_INTERVAL_MS);
     return () => {
       window.clearInterval(intervalId);
     };
-  }, [refresh]);
+  }, [pollingEnabled, refresh]);
 
   const join = useCallback(
     async (nickname: string): Promise<CommandResult> => {
@@ -76,10 +89,10 @@ export function useChatRoom(): ChatRoom {
         return { ok: false, error: '채팅 서버가 입장 정보를 보내지 않았습니다.' };
       }
       sessionIdRef.current = response.sessionId;
-      applySnapshot(response.state);
+      applySuccessfulResponse(response);
       return { ok: true };
     },
-    [applySnapshot],
+    [applySuccessfulResponse],
   );
 
   const changeNickname = useCallback(
@@ -94,11 +107,11 @@ export function useChatRoom(): ChatRoom {
         nickname,
       });
       if (response.ok === true) {
-        applySnapshot(response.state);
+        applySuccessfulResponse(response);
       }
       return toCommandResult(response);
     },
-    [applySnapshot],
+    [applySuccessfulResponse],
   );
 
   const sendMessage = useCallback(
@@ -109,11 +122,11 @@ export function useChatRoom(): ChatRoom {
       }
       const response = await safePost({ action: 'send_message', sessionId, content });
       if (response.ok === true) {
-        applySnapshot(response.state);
+        applySuccessfulResponse(response);
       }
       return toCommandResult(response);
     },
-    [applySnapshot],
+    [applySuccessfulResponse],
   );
 
   const adminLogin = useCallback(
@@ -126,10 +139,10 @@ export function useChatRoom(): ChatRoom {
         return { ok: false, error: '채팅 서버가 관리자 정보를 보내지 않았습니다.' };
       }
       adminTokenRef.current = response.adminToken;
-      applySnapshot(response.state);
+      applySuccessfulResponse(response);
       return { ok: true };
     },
-    [applySnapshot],
+    [applySuccessfulResponse],
   );
 
   const clearChat = useCallback(async (): Promise<CommandResult> => {
@@ -137,8 +150,8 @@ export function useChatRoom(): ChatRoom {
     if (!adminToken) {
       return { ok: false, error: '관리자 로그인이 필요합니다.' };
     }
-    return postAdminAction({ action: 'clear_chat', adminToken }, applySnapshot);
-  }, [applySnapshot]);
+    return postAdminAction({ action: 'clear_chat', adminToken }, applySuccessfulResponse);
+  }, [applySuccessfulResponse]);
 
   const toggleAnonymous = useCallback(
     async (enabled: boolean): Promise<CommandResult> => {
@@ -148,10 +161,10 @@ export function useChatRoom(): ChatRoom {
       }
       return postAdminAction(
         { action: 'toggle_anonymous', adminToken, enabled },
-        applySnapshot,
+        applySuccessfulResponse,
       );
     },
-    [applySnapshot],
+    [applySuccessfulResponse],
   );
 
   const pinNotice = useCallback(
@@ -162,10 +175,10 @@ export function useChatRoom(): ChatRoom {
       }
       return postAdminAction(
         { action: 'pin_notice', adminToken, messageId },
-        applySnapshot,
+        applySuccessfulResponse,
       );
     },
-    [applySnapshot],
+    [applySuccessfulResponse],
   );
 
   const unpinNotice = useCallback(async (): Promise<CommandResult> => {
@@ -173,8 +186,8 @@ export function useChatRoom(): ChatRoom {
     if (!adminToken) {
       return { ok: false, error: '관리자 로그인이 필요합니다.' };
     }
-    return postAdminAction({ action: 'unpin_notice', adminToken }, applySnapshot);
-  }, [applySnapshot]);
+    return postAdminAction({ action: 'unpin_notice', adminToken }, applySuccessfulResponse);
+  }, [applySuccessfulResponse]);
 
   const toggleChatActive = useCallback(
     async (active: boolean): Promise<CommandResult> => {
@@ -184,10 +197,10 @@ export function useChatRoom(): ChatRoom {
       }
       return postAdminAction(
         { action: 'toggle_chat_active', adminToken, active },
-        applySnapshot,
+        applySuccessfulResponse,
       );
     },
-    [applySnapshot],
+    [applySuccessfulResponse],
   );
 
   return {
@@ -228,8 +241,7 @@ async function safePost(
   action: Parameters<typeof postChatAction>[0],
 ): Promise<SafeApiResponse> {
   try {
-    const response = await postChatAction(action);
-    return response;
+    return await postChatAction(action);
   } catch (error) {
     return { ok: false, error: toErrorMessage(error) };
   }
@@ -237,11 +249,11 @@ async function safePost(
 
 async function postAdminAction(
   action: Parameters<typeof postChatAction>[0],
-  applySnapshot: (snapshot: ChatSnapshot) => void,
+  applySuccessfulResponse: (response: SuccessfulApiResponse) => void,
 ): Promise<CommandResult> {
   const response = await safePost(action);
   if (response.ok === true) {
-    applySnapshot(response.state);
+    applySuccessfulResponse(response);
   }
   return toCommandResult(response);
 }

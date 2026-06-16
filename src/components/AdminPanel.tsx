@@ -1,11 +1,11 @@
 import {
   Lock,
   LogOut,
+  Settings,
   Trash2,
   Unlock,
   UserCheck,
   UserX,
-  Settings,
 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { cn } from '../lib/cn';
@@ -40,6 +40,12 @@ export function AdminPanel({
   pinnedNotice,
   chatActive,
 }: AdminPanelProps) {
+  const statusColor = isConnected && chatActive ? 'bg-green-500 animate-pulse' : 'bg-red-500';
+  const statusTitle = !chatActive
+    ? '채팅방 잠김 - 관리자 자동 조회 중지'
+    : isConnected
+      ? '채팅 서버 연결 완료'
+      : '채팅 서버 연결 대기 중';
   const [controlError, setControlError] = useState('');
   const [confirmingClear, setConfirmingClear] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -74,11 +80,8 @@ export function AdminPanel({
           <Settings size={18} className="text-blue-600 shrink-0" />
           <span className="whitespace-nowrap">관리자 패널</span>
           <span
-            className={cn(
-              'w-2 h-2 rounded-full shrink-0',
-              isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500',
-            )}
-            title={isConnected ? '채팅 서버 연결 완료' : '채팅 서버 연결 대기 중'}
+            className={cn('w-2 h-2 rounded-full shrink-0', statusColor)}
+            title={statusTitle}
           />
         </h3>
         <button
@@ -115,7 +118,7 @@ export function AdminPanel({
             )}
           >
             {chatActive ? <Unlock size={16} /> : <Lock size={16} />}
-            {chatActive ? '채팅방 활성화됨' : '채팅방 잠김 (비활성화)'}
+            {chatActive ? '채팅방 활성화됨' : '채팅방 잠김'}
           </button>
           <button
             onClick={() => {
@@ -143,7 +146,7 @@ export function AdminPanel({
           )}
         >
           <Trash2 size={16} />
-          {confirmingClear ? '한 번 더 누르면 삭제됩니다' : '모든 채팅 초기화'}
+          {confirmingClear ? '한 번 더 누르면 삭제합니다' : '모든 채팅 초기화'}
         </button>
         {confirmingClear && (
           <button

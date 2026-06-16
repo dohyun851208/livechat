@@ -4,12 +4,14 @@ import { AdminPanel } from './components/AdminPanel';
 import { ChatScreen } from './components/ChatScreen';
 import { NicknameScreen } from './components/NicknameScreen';
 import { StartScreen } from './components/StartScreen';
+import { assertNever } from './assert-never';
+import type { ChatPollingMode } from './chat-polling';
 import { useChatRoom } from './use-chat-room';
 import type { AppView } from './types';
 
 export function App() {
-  const chat = useChatRoom();
   const [view, setView] = useState<AppView>('start');
+  const chat = useChatRoom(toChatPollingMode(view));
   const [nickname, setNickname] = useState('');
   const [inputNickname, setInputNickname] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -131,4 +133,19 @@ export function App() {
       )}
     </div>
   );
+}
+
+function toChatPollingMode(view: AppView): ChatPollingMode {
+  switch (view) {
+    case 'chat':
+      return 'chat';
+    case 'admin_panel':
+      return 'admin';
+    case 'start':
+    case 'nickname_input':
+    case 'admin_login':
+      return 'idle';
+    default:
+      return assertNever(view);
+  }
 }

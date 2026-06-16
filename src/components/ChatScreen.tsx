@@ -30,6 +30,12 @@ export function ChatScreen({
   pinnedNotice,
   chatActive,
 }: ChatScreenProps) {
+  const statusColor = isConnected && chatActive ? 'bg-green-500 animate-pulse' : 'bg-red-500';
+  const statusTitle = !chatActive
+    ? '채팅방 잠김'
+    : isConnected
+      ? '채팅 서버 연결 완료'
+      : '채팅 서버 연결 대기 중';
   const [messageInput, setMessageInput] = useState('');
   const [sendError, setSendError] = useState('');
   const [isChangingNickname, setIsChangingNickname] = useState(false);
@@ -87,15 +93,16 @@ export function ChatScreen({
         <div className="flex items-center gap-1.5 min-w-0">
           <h3 className="font-semibold text-gray-800 whitespace-nowrap">실시간 채팅</h3>
           <span
-            className={cn(
-              'w-2 h-2 rounded-full shrink-0',
-              isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500',
-            )}
-            title={isConnected ? '채팅 서버 연결 완료' : '채팅 서버 연결 대기 중'}
+            className={cn('w-2 h-2 rounded-full shrink-0', statusColor)}
+            title={statusTitle}
           />
-          {!isConnected && (
+          {!chatActive ? (
+            <span className="text-[10px] text-red-500 font-medium whitespace-nowrap">
+              잠김
+            </span>
+          ) : !isConnected && (
             <span className="text-[10px] text-red-500 font-medium whitespace-nowrap animate-pulse">
-              연결 중...
+              연결 중..
             </span>
           )}
         </div>
@@ -152,12 +159,7 @@ export function ChatScreen({
         </div>
       )}
 
-      {pinnedNotice && (
-        <PinnedNotice
-          notice={pinnedNotice}
-          anonymousMode={anonymousMode}
-        />
-      )}
+      {pinnedNotice && <PinnedNotice notice={pinnedNotice} anonymousMode={anonymousMode} />}
 
       <div className="flex-1 overflow-y-auto p-4 space-y-1.5 pb-8">
         {messages.length === 0 ? (
@@ -167,11 +169,7 @@ export function ChatScreen({
           </div>
         ) : (
           messages.map((message) => (
-            <ChatLine
-              key={message.id}
-              message={message}
-              anonymousMode={anonymousMode}
-            />
+            <ChatLine key={message.id} message={message} anonymousMode={anonymousMode} />
           ))
         )}
         <div ref={messagesEndRef} />
@@ -194,7 +192,7 @@ export function ChatScreen({
           <input
             type="text"
             className="flex-1 bg-transparent px-4 py-3 outline-none text-[15px] text-gray-800 placeholder:text-gray-400 min-w-0"
-            placeholder="메시지를 입력하세요..."
+            placeholder="메시지를 입력하세요.."
             value={messageInput}
             onChange={(event) => setMessageInput(event.target.value)}
             disabled={!chatActive}

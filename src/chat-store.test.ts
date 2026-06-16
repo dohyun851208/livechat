@@ -71,4 +71,40 @@ describe('ChatStore', () => {
     expect(store.snapshot().messages).toEqual([]);
     expect(store.snapshot().pinnedNotice).toBeNull();
   });
+
+  it('keeps messages for three hours and removes older history', () => {
+    let currentTime = 1_000;
+    const store = new ChatStore('8624', () => currentTime);
+    const join = store.join('시간확인');
+    expect(join.ok).toBe(true);
+    if (!join.ok) {
+      return;
+    }
+
+    expect(
+      store.sendMessage({
+        sessionId: join.sessionId,
+        content: '3시간 보존 메시지',
+      }),
+    ).toEqual({ ok: true });
+
+    currentTime += 3 * 60 * 60 * 1000;
+    expect(store.snapshot().messages).toHaveLength(1);
+
+    currentTime += 1;
+    expect(store.snapshot().messages).toEqual([]);
+  });
+
+  it('allows thirty active participants and rejects the thirty first', () => {
+    const store = new ChatStore();
+
+    for (let index = 1; index <= 30; index += 1) {
+      expect(store.join(`학생${index}`).ok).toBe(true);
+    }
+
+    expect(store.join('학생31')).toEqual({
+      ok: false,
+      error: '참여 인원이 30명에 도달했습니다.',
+    });
+  });
 });

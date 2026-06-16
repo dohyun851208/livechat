@@ -1,34 +1,18 @@
 import { randomUUID } from 'node:crypto';
 import { CHAT_PALETTE } from './chat-palette.js';
+import {
+  ADMIN_TTL_MS,
+  MAX_ACTIVE_PARTICIPANTS,
+  MAX_HISTORY,
+  MESSAGE_RETENTION_MS,
+  SESSION_TTL_MS,
+  type AdminLoginResult,
+  type AdminSession,
+  type JoinResult,
+  type ParticipantSession,
+  type SendMessageInput,
+} from './chat-store-types.js';
 import type { ChatMessage, ChatSnapshot, CommandResult } from './types';
-
-const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
-const ADMIN_TTL_MS = 6 * 60 * 60 * 1000;
-const MAX_HISTORY = 300;
-
-type ParticipantSession = {
-  readonly id: string;
-  nickname: string;
-  lastSeen: number;
-};
-
-type AdminSession = {
-  readonly token: string;
-  lastSeen: number;
-};
-
-type JoinResult =
-  | { readonly ok: true; readonly sessionId: string; readonly error?: undefined }
-  | { readonly ok: false; readonly error: string };
-
-type AdminLoginResult =
-  | { readonly ok: true; readonly adminToken: string; readonly error?: undefined }
-  | { readonly ok: false; readonly error: string };
-
-type SendMessageInput = {
-  readonly sessionId: string;
-  readonly content: string;
-};
 
 export class ChatStore {
   private readonly adminPassword: string;
@@ -49,6 +33,7 @@ export class ChatStore {
 
   snapshot(): ChatSnapshot {
     this.cleanupExpiredSessions();
+    this.cleanupExpiredMessages();
     return {
       messages: [...this.messages],
       anonymousMode: this.anonymousMode,
@@ -68,6 +53,9 @@ export class ChatStore {
         ok: false,
         error: '이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.',
       };
+    }
+    if (this.sessions.size >= MAX_ACTIVE_PARTICIPANTS) {
+      return { ok: false, error: '참여 인원이 30명에 도달했습니다.' };
     }
 
     const sessionId = randomUUID();
@@ -122,8 +110,9 @@ export class ChatStore {
       return { ok: false, error: '메시지를 입력해주세요.' };
     }
 
+    this.cleanupExpiredMessages();
     this.messages = [
-      ...this.messages.slice(Math.max(0, this.messages.length - MAX_HISTORY + 1)),
+      ...this.messages,
       {
         id: randomUUID(),
         nickname: session.nickname,
@@ -131,7 +120,7 @@ export class ChatStore {
         color: this.getColor(session.nickname),
         createdAt: this.now(),
       },
-    ];
+    ].slice(Math.max(0, this.messages.length + 1 - MAX_HISTORY));
     session.lastSeen = this.now();
     this.bumpVersion();
     return { ok: true };
@@ -262,6 +251,21 @@ export class ChatStore {
         this.adminSessions.delete(adminToken);
       }
     }
+  }
+
+  private cleanupExpiredMessages(): void {
+    const currentTime = this.now();
+    const nextMessages = this.messages.filter(
+      (message) => currentTime - message.createdAt <= MESSAGE_RETENTION_MS,
+    );
+    if (nextMessages.length === this.messages.length) {
+      return;
+    }
+    this.messages = nextMessages;
+    if (this.pinnedNoticeId && !this.messages.some((message) => message.id === this.pinnedNoticeId)) {
+      this.pinnedNoticeId = null;
+    }
+    this.bumpVersion();
   }
 
   private bumpVersion(): void {

@@ -1,84 +1,92 @@
+import { assertNever } from './assert-never.js';
 import {
   ChatActionSchema,
   type ChatAction,
   type ChatApiResponse,
 } from './chat-contract.js';
-import type { ChatStore } from './chat-store';
-import { assertNever } from './assert-never.js';
+import type { ChatStoreApi } from './chat-store-api';
 
-export function getChatStateResponse(store: ChatStore): ChatApiResponse {
+export async function getChatStateResponse(
+  store: ChatStoreApi,
+): Promise<ChatApiResponse> {
   return {
     ok: true,
-    state: store.snapshot(),
+    state: await store.snapshot(),
   };
 }
 
-export function handleChatAction(store: ChatStore, input: unknown): ChatApiResponse {
+export async function handleChatAction(
+  store: ChatStoreApi,
+  input: unknown,
+): Promise<ChatApiResponse> {
   const parsed = ChatActionSchema.safeParse(input);
   if (!parsed.success) {
     return {
       ok: false,
       error: '요청 형식이 올바르지 않습니다.',
-      state: store.snapshot(),
+      state: await store.snapshot(),
     };
   }
 
   return executeAction(store, parsed.data);
 }
 
-function executeAction(store: ChatStore, action: ChatAction): ChatApiResponse {
+async function executeAction(
+  store: ChatStoreApi,
+  action: ChatAction,
+): Promise<ChatApiResponse> {
   switch (action.action) {
     case 'join': {
-      const result = store.join(action.nickname);
+      const result = await store.join(action.nickname);
       if (result.ok === false) {
         return failure(store, result.error);
       }
       return {
         ok: true,
         sessionId: result.sessionId,
-        state: store.snapshot(),
+        state: await store.snapshot(),
       };
     }
     case 'change_nickname': {
-      const result = store.changeNickname(action.sessionId, action.nickname);
+      const result = await store.changeNickname(action.sessionId, action.nickname);
       return result.ok === true ? success(store) : failure(store, result.error);
     }
     case 'send_message': {
-      const result = store.sendMessage({
+      const result = await store.sendMessage({
         sessionId: action.sessionId,
         content: action.content,
       });
       return result.ok === true ? success(store) : failure(store, result.error);
     }
     case 'admin_login': {
-      const result = store.adminLogin(action.password);
+      const result = await store.adminLogin(action.password);
       if (result.ok === false) {
         return failure(store, result.error);
       }
       return {
         ok: true,
         adminToken: result.adminToken,
-        state: store.snapshot(),
+        state: await store.snapshot(),
       };
     }
     case 'clear_chat': {
-      const result = store.clearChat(action.adminToken);
+      const result = await store.clearChat(action.adminToken);
       return result.ok === true ? success(store) : failure(store, result.error);
     }
     case 'toggle_anonymous': {
-      const result = store.toggleAnonymous(action.adminToken, action.enabled);
+      const result = await store.toggleAnonymous(action.adminToken, action.enabled);
       return result.ok === true ? success(store) : failure(store, result.error);
     }
     case 'pin_notice': {
-      const result = store.pinNotice(action.adminToken, action.messageId);
+      const result = await store.pinNotice(action.adminToken, action.messageId);
       return result.ok === true ? success(store) : failure(store, result.error);
     }
     case 'unpin_notice': {
-      const result = store.unpinNotice(action.adminToken);
+      const result = await store.unpinNotice(action.adminToken);
       return result.ok === true ? success(store) : failure(store, result.error);
     }
     case 'toggle_chat_active': {
-      const result = store.toggleChatActive(action.adminToken, action.active);
+      const result = await store.toggleChatActive(action.adminToken, action.active);
       return result.ok === true ? success(store) : failure(store, result.error);
     }
     default:
@@ -86,17 +94,20 @@ function executeAction(store: ChatStore, action: ChatAction): ChatApiResponse {
   }
 }
 
-function success(store: ChatStore): ChatApiResponse {
+async function success(store: ChatStoreApi): Promise<ChatApiResponse> {
   return {
     ok: true,
-    state: store.snapshot(),
+    state: await store.snapshot(),
   };
 }
 
-function failure(store: ChatStore, error: string): ChatApiResponse {
+async function failure(
+  store: ChatStoreApi,
+  error: string,
+): Promise<ChatApiResponse> {
   return {
     ok: false,
     error,
-    state: store.snapshot(),
+    state: await store.snapshot(),
   };
 }

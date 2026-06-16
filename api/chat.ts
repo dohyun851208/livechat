@@ -14,13 +14,13 @@ export default async function handler(
   const store = getGlobalChatStore();
 
   if (request.method === 'GET') {
-    sendJson(response, 200, getChatStateResponse(store));
+    sendJson(response, 200, await getChatStateResponse(store));
     return;
   }
 
   if (request.method === 'POST') {
     const body = await readJsonBody(request);
-    const result = handleChatAction(store, body);
+    const result = await handleChatAction(store, body);
     sendJson(response, result.ok ? 200 : 400, result);
     return;
   }
@@ -28,7 +28,7 @@ export default async function handler(
   sendJson(response, 405, {
     ok: false,
     error: '지원하지 않는 요청 방식입니다.',
-    state: store.snapshot(),
+    state: await store.snapshot(),
   });
 }
 

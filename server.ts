@@ -15,12 +15,12 @@ async function startServer(): Promise<void> {
     response.json({ status: 'ok', timestamp: Date.now() });
   });
 
-  app.get('/api/chat', (_request, response) => {
-    response.json(getChatStateResponse(store));
+  app.get('/api/chat', async (_request, response) => {
+    response.json(await getChatStateResponse(store));
   });
 
-  app.post('/api/chat', (request, response) => {
-    const result = handleChatAction(store, request.body);
+  app.post('/api/chat', async (request, response) => {
+    const result = await handleChatAction(store, request.body);
     response.status(result.ok ? 200 : 400).json(result);
   });
 

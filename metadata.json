@@ -1,0 +1,6 @@
+{
+  "name": "Live Class Chat",
+  "description": "A very simple, lightweight, real-time chat application designed to be placed narrowly next to a presentation slide for receiving feedback and questions from students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

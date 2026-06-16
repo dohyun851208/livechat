@@ -1,8 +1,8 @@
 import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
-import { getChatStateResponse, handleChatAction } from './src/chat-controller';
-import { getGlobalChatStore } from './src/global-chat-store';
+import { getChatStateResponse, handleChatAction } from './src/chat-controller.js';
+import { getGlobalChatStore } from './src/global-chat-store.js';
 
 async function startServer(): Promise<void> {
   const app = express();

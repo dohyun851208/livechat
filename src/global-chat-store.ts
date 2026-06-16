@@ -1,4 +1,4 @@
-import { ChatStore } from './chat-store';
+import { ChatStore } from './chat-store.js';
 
 declare global {
   var __livechatStore: ChatStore | undefined;

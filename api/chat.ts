@@ -1,6 +1,6 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { getChatStateResponse, handleChatAction } from '../src/chat-controller';
-import { getGlobalChatStore } from '../src/global-chat-store';
+import { getChatStateResponse, handleChatAction } from '../src/chat-controller.js';
+import { getGlobalChatStore } from '../src/global-chat-store.js';
 
 export default async function handler(
   request: IncomingMessage,

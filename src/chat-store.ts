@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { CHAT_PALETTE } from './chat-palette';
+import { CHAT_PALETTE } from './chat-palette.js';
 import type { ChatMessage, ChatSnapshot, CommandResult } from './types';
 
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000;

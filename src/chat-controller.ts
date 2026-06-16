@@ -2,9 +2,9 @@ import {
   ChatActionSchema,
   type ChatAction,
   type ChatApiResponse,
-} from './chat-contract';
+} from './chat-contract.js';
 import type { ChatStore } from './chat-store';
-import { assertNever } from './assert-never';
+import { assertNever } from './assert-never.js';
 
 export function getChatStateResponse(store: ChatStore): ChatApiResponse {
   return {

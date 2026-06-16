@@ -7,8 +7,8 @@ import {
   type JoinResult,
   type ParticipantSession,
   type SendMessageInput,
-} from './chat-store-types';
-import type { ChatStoreApi } from './chat-store-api';
+} from './chat-store-types.js';
+import type { ChatStoreApi } from './chat-store-api.js';
 import {
   decodeAdminSession,
   decodeChatState,
@@ -16,27 +16,27 @@ import {
   deterministicNicknameColor,
   encodeRedisJson,
   redisBoolean,
-} from './redis-chat-codec';
+} from './redis-chat-codec.js';
 import {
   createRedisChatClient,
   type RedisChatClient,
   type RedisSortedSetMember,
-} from './redis-chat-client';
-import { createRedisChatKeys, type RedisChatKeys } from './redis-chat-keys';
+} from './redis-chat-client.js';
+import { createRedisChatKeys, type RedisChatKeys } from './redis-chat-keys.js';
 import {
   cleanupExpiredRedisMessages,
   getRedisMessages,
   trimRedisHistory,
-} from './redis-chat-messages';
+} from './redis-chat-messages.js';
 import {
   cleanupExpiredRedisSessions,
   saveRedisAdmin,
   saveRedisSession,
-} from './redis-chat-sessions';
+} from './redis-chat-sessions.js';
 import {
   isNicknameInUse,
-} from './redis-chat-rules';
-import type { ChatMessage, ChatSnapshot, CommandResult } from './types';
+} from './redis-chat-rules.js';
+import type { ChatMessage, ChatSnapshot, CommandResult } from './types.js';
 
 export { createRedisChatClient, type RedisChatClient, type RedisSortedSetMember };
 

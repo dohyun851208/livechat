@@ -3,7 +3,7 @@ import type {
   JoinResult,
   SendMessageInput,
 } from './chat-store-types';
-import type { ChatSnapshot, CommandResult } from './types';
+import type { ChatSnapshot, CommandResult } from './types.js';
 
 export type StoreResult<T> = T | Promise<T>;
 

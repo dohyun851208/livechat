@@ -1,7 +1,7 @@
 import { z } from 'zod';
-import { CHAT_PALETTE } from './chat-palette';
-import type { AdminSession, ParticipantSession } from './chat-store-types';
-import type { ChatMessage } from './types';
+import { CHAT_PALETTE } from './chat-palette.js';
+import type { AdminSession, ParticipantSession } from './chat-store-types.js';
+import type { ChatMessage } from './types.js';
 
 const ParticipantSessionSchema = z.object({
   id: z.string(),

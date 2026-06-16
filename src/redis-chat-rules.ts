@@ -2,7 +2,7 @@ import {
   ADMIN_TTL_MS,
   SESSION_TTL_MS,
   type ParticipantSession,
-} from './chat-store-types';
+} from './chat-store-types.js';
 
 export const SESSION_TTL_SECONDS = Math.ceil(SESSION_TTL_MS / 1000);
 export const ADMIN_TTL_SECONDS = Math.ceil(ADMIN_TTL_MS / 1000);

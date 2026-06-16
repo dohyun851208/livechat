@@ -1,7 +1,7 @@
-import { MAX_HISTORY, MESSAGE_RETENTION_MS } from './chat-store-types';
-import type { RedisChatClient } from './redis-chat-client';
-import { decodeChatMessage } from './redis-chat-codec';
-import type { ChatMessage } from './types';
+import { MAX_HISTORY, MESSAGE_RETENTION_MS } from './chat-store-types.js';
+import type { RedisChatClient } from './redis-chat-client.js';
+import { decodeChatMessage } from './redis-chat-codec.js';
+import type { ChatMessage } from './types.js';
 
 export async function getRedisMessages(
   redis: RedisChatClient,

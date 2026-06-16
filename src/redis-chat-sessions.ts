@@ -3,11 +3,11 @@ import {
   type AdminSession,
   type ParticipantSession,
   SESSION_TTL_MS,
-} from './chat-store-types';
-import type { RedisChatClient } from './redis-chat-client';
-import { encodeRedisJson } from './redis-chat-codec';
-import type { RedisChatKeys } from './redis-chat-keys';
-import { ADMIN_TTL_SECONDS, SESSION_TTL_SECONDS } from './redis-chat-rules';
+} from './chat-store-types.js';
+import type { RedisChatClient } from './redis-chat-client.js';
+import { encodeRedisJson } from './redis-chat-codec.js';
+import type { RedisChatKeys } from './redis-chat-keys.js';
+import { ADMIN_TTL_SECONDS, SESSION_TTL_SECONDS } from './redis-chat-rules.js';
 
 export async function saveRedisSession(
   redis: RedisChatClient,

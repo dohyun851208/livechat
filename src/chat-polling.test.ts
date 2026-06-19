@@ -12,8 +12,8 @@ describe('shouldPollChat', () => {
     expect(shouldPollChat('chat', false)).toBe(true);
   });
 
-  it('stops polling in the admin panel while the room is locked', () => {
+  it('keeps polling in the admin panel so lock state stays visible', () => {
     expect(shouldPollChat('admin', true)).toBe(true);
-    expect(shouldPollChat('admin', false)).toBe(false);
+    expect(shouldPollChat('admin', false)).toBe(true);
   });
 });

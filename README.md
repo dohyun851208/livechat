@@ -1,20 +1,24 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Live Class Chat
 
-# Run and deploy your AI Studio app
+A narrow real-time classroom chat app for questions and feedback during a live class or presentation.
 
-This contains everything you need to run your app locally.
+## Local Development
 
-View your app in AI Studio: https://ai.studio/apps/33c48739-042d-4595-b8c2-0041e3fb43fb
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
+Prerequisites: Node.js
 
 1. Install dependencies:
    `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+2. Optional: copy `.env.example` to `.env.local` and fill in production-like values.
 3. Run the app:
    `npm run dev`
+
+## Vercel
+
+This project uses Vercel static hosting for the Vite client and `api/chat.ts` for the chat API.
+
+- Vercel build command: `npm run build:client`
+- Output directory: `dist`
+- Optional persistence: set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+- Admin password: set `ADMIN_PASSWORD` in Vercel project environment variables
+
+Without Upstash Redis, Vercel serverless instances use temporary in-memory chat state.

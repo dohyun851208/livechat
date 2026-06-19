@@ -42,7 +42,7 @@ export function AdminPanel({
 }: AdminPanelProps) {
   const statusColor = isConnected && chatActive ? 'bg-green-500 animate-pulse' : 'bg-red-500';
   const statusTitle = !chatActive
-    ? '채팅방 잠김 - 관리자 자동 조회 중지'
+    ? '채팅방 잠김'
     : isConnected
       ? '채팅 서버 연결 완료'
       : '채팅 서버 연결 대기 중';

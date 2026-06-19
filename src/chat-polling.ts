@@ -12,6 +12,6 @@ export function shouldPollChat(
     case 'chat':
       return true;
     case 'admin':
-      return chatActive;
+      return true;
   }
 }

@@ -65,6 +65,10 @@ class FallbackChatStore implements ChatStoreApi {
     return this.run((store) => store.sendMessage(input));
   }
 
+  sendAdminMessage(adminToken: string, content: string): Promise<CommandResult> {
+    return this.run((store) => store.sendAdminMessage(adminToken, content));
+  }
+
   adminLogin(password: string): Promise<AdminLoginResult> {
     return this.run((store) => store.adminLogin(password));
   }

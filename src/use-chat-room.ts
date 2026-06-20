@@ -25,6 +25,7 @@ export type ChatRoom = {
   readonly join: (nickname: string) => Promise<CommandResult>;
   readonly changeNickname: (nickname: string) => Promise<CommandResult>;
   readonly sendMessage: (content: string) => Promise<CommandResult>;
+  readonly sendAdminMessage: (content: string) => Promise<CommandResult>;
   readonly adminLogin: (password: string) => Promise<CommandResult>;
   readonly clearChat: () => Promise<CommandResult>;
   readonly toggleAnonymous: (enabled: boolean) => Promise<CommandResult>;
@@ -129,6 +130,20 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
     [applySuccessfulResponse],
   );
 
+  const sendAdminMessage = useCallback(
+    async (content: string): Promise<CommandResult> => {
+      const adminToken = adminTokenRef.current;
+      if (!adminToken) {
+        return { ok: false, error: '관리자 로그인이 필요합니다.' };
+      }
+      return postAdminAction(
+        { action: 'admin_send_message', adminToken, content },
+        applySuccessfulResponse,
+      );
+    },
+    [applySuccessfulResponse],
+  );
+
   const adminLogin = useCallback(
     async (password: string): Promise<CommandResult> => {
       const response = await safePost({ action: 'admin_login', password });
@@ -213,6 +228,7 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
     join,
     changeNickname,
     sendMessage,
+    sendAdminMessage,
     adminLogin,
     clearChat,
     toggleAnonymous,

@@ -12,6 +12,7 @@ export interface ChatStoreApi {
   join(nickname: string): StoreResult<JoinResult>;
   changeNickname(sessionId: string, nickname: string): StoreResult<CommandResult>;
   sendMessage(input: SendMessageInput): StoreResult<CommandResult>;
+  sendAdminMessage(adminToken: string, content: string): StoreResult<CommandResult>;
   adminLogin(password: string): StoreResult<AdminLoginResult>;
   clearChat(adminToken: string): StoreResult<CommandResult>;
   toggleAnonymous(adminToken: string, enabled: boolean): StoreResult<CommandResult>;

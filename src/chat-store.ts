@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { CHAT_PALETTE } from './chat-palette.js';
 import {
+  ADMIN_COLOR,
+  ADMIN_NICKNAME,
   ADMIN_TTL_MS,
   MAX_ACTIVE_PARTICIPANTS,
   MAX_HISTORY,
@@ -48,6 +50,9 @@ export class ChatStore {
     if (!cleanNickname) {
       return { ok: false, error: '이름을 입력해주세요.' };
     }
+    if (cleanNickname === ADMIN_NICKNAME) {
+      return { ok: false, error: '사용할 수 없는 이름입니다.' };
+    }
     if (this.isNicknameInUse(cleanNickname)) {
       return {
         ok: false,
@@ -78,6 +83,9 @@ export class ChatStore {
     const cleanNickname = nickname.trim();
     if (!cleanNickname) {
       return { ok: false, error: '이름을 입력해주세요.' };
+    }
+    if (cleanNickname === ADMIN_NICKNAME) {
+      return { ok: false, error: '사용할 수 없는 이름입니다.' };
     }
     if (
       cleanNickname.toLowerCase() !== session.nickname.toLowerCase() &&
@@ -111,17 +119,33 @@ export class ChatStore {
     }
 
     this.cleanupExpiredMessages();
-    this.messages = [
-      ...this.messages,
-      {
-        id: randomUUID(),
-        nickname: session.nickname,
-        content,
-        color: this.getColor(session.nickname),
-        createdAt: this.now(),
-      },
-    ].slice(Math.max(0, this.messages.length + 1 - MAX_HISTORY));
+    this.addMessage({
+      nickname: session.nickname,
+      content,
+      color: this.getColor(session.nickname),
+    });
     session.lastSeen = this.now();
+    this.bumpVersion();
+    return { ok: true };
+  }
+
+  sendAdminMessage(adminToken: string, content: string): CommandResult {
+    const auth = this.touchAdmin(adminToken);
+    if (!auth.ok) {
+      return auth;
+    }
+
+    const cleanContent = content.trim();
+    if (!cleanContent) {
+      return { ok: false, error: '메시지를 입력해주세요.' };
+    }
+
+    this.cleanupExpiredMessages();
+    this.addMessage({
+      nickname: ADMIN_NICKNAME,
+      content: cleanContent,
+      color: ADMIN_COLOR,
+    });
     this.bumpVersion();
     return { ok: true };
   }
@@ -227,6 +251,23 @@ export class ChatStore {
       CHAT_PALETTE[this.nicknameColors.size % CHAT_PALETTE.length] ?? CHAT_PALETTE[0];
     this.nicknameColors.set(nickname, color);
     return color;
+  }
+
+  private addMessage(input: {
+    readonly nickname: string;
+    readonly content: string;
+    readonly color: string;
+  }): void {
+    this.messages = [
+      ...this.messages,
+      {
+        id: randomUUID(),
+        nickname: input.nickname,
+        content: input.content,
+        color: input.color,
+        createdAt: this.now(),
+      },
+    ].slice(Math.max(0, this.messages.length + 1 - MAX_HISTORY));
   }
 
   private touchAdmin(adminToken: string): CommandResult {

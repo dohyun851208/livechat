@@ -37,6 +37,11 @@ export const ChatActionSchema = z.discriminatedUnion('action', [
     content: MessageContentSchema,
   }),
   z.object({
+    action: z.literal('admin_send_message'),
+    adminToken: TokenSchema,
+    content: MessageContentSchema,
+  }),
+  z.object({
     action: z.literal('admin_login'),
     password: z.string(),
   }),

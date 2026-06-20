@@ -123,6 +123,7 @@ export function App() {
           onClear={chat.clearChat}
           onToggleAnonymous={chat.toggleAnonymous}
           onToggleChatActive={chat.toggleChatActive}
+          onSendMessage={chat.sendAdminMessage}
           onPinNotice={chat.pinNotice}
           onUnpinNotice={chat.unpinNotice}
           onLogout={handleAdminLogout}

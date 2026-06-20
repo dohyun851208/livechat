@@ -32,6 +32,35 @@ describe('RedisChatStore', () => {
     ]);
   });
 
+  it('reserves the admin nickname for admin messages', async () => {
+    const store = new RedisChatStore(new FakeRedisClient(() => 1_000));
+
+    expect(await store.join('관리자')).toEqual({
+      ok: false,
+      error: '사용할 수 없는 이름입니다.',
+    });
+  });
+
+  it('lets an admin send messages from the admin panel', async () => {
+    const store = new RedisChatStore(new FakeRedisClient(() => 1_000));
+    const login = await store.adminLogin('8624');
+    expect(login.ok).toBe(true);
+    if (!login.ok) {
+      return;
+    }
+
+    expect(await store.sendAdminMessage(login.adminToken, '관리자 안내입니다')).toEqual({
+      ok: true,
+    });
+    expect((await store.snapshot()).messages).toMatchObject([
+      {
+        nickname: '관리자',
+        content: '관리자 안내입니다',
+        color: '#111827',
+      },
+    ]);
+  });
+
   it('removes chat history after ninety minutes', async () => {
     let currentTime = 1_000;
     const store = new RedisChatStore(new FakeRedisClient(() => currentTime), '8624', () => currentTime);

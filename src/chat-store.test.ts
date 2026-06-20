@@ -38,6 +38,35 @@ describe('ChatStore', () => {
     });
   });
 
+  it('reserves the admin nickname for admin messages', () => {
+    const store = new ChatStore();
+
+    expect(store.join('관리자')).toEqual({
+      ok: false,
+      error: '사용할 수 없는 이름입니다.',
+    });
+  });
+
+  it('lets an admin send messages from the admin panel', () => {
+    const store = new ChatStore();
+    const login = store.adminLogin('8624');
+    expect(login.ok).toBe(true);
+    if (!login.ok) {
+      return;
+    }
+
+    expect(store.sendAdminMessage(login.adminToken, '관리자 안내입니다')).toEqual({
+      ok: true,
+    });
+    expect(store.snapshot().messages).toMatchObject([
+      {
+        nickname: '관리자',
+        content: '관리자 안내입니다',
+        color: '#111827',
+      },
+    ]);
+  });
+
   it('lets an admin pin and clear messages', () => {
     const store = new ChatStore();
     const join = store.join('서연');

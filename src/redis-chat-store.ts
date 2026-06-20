@@ -1,5 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import {
+  ADMIN_COLOR,
+  ADMIN_NICKNAME,
   ADMIN_TTL_MS,
   MAX_ACTIVE_PARTICIPANTS,
   SESSION_TTL_MS,
@@ -78,6 +80,9 @@ export class RedisChatStore implements ChatStoreApi {
     if (!cleanNickname) {
       return { ok: false, error: '이름을 입력해주세요.' };
     }
+    if (cleanNickname === ADMIN_NICKNAME) {
+      return { ok: false, error: '사용할 수 없는 이름입니다.' };
+    }
     const activeSessions = await this.getActiveSessions();
     if (isNicknameInUse(activeSessions, cleanNickname)) {
       return { ok: false, error: '이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.' };
@@ -105,6 +110,9 @@ export class RedisChatStore implements ChatStoreApi {
     const cleanNickname = nickname.trim();
     if (!cleanNickname) {
       return { ok: false, error: '이름을 입력해주세요.' };
+    }
+    if (cleanNickname === ADMIN_NICKNAME) {
+      return { ok: false, error: '사용할 수 없는 이름입니다.' };
     }
     const activeSessions = await this.getActiveSessions();
     if (
@@ -154,6 +162,34 @@ export class RedisChatStore implements ChatStoreApi {
       this.trimHistory(),
       saveRedisSession(this.redis, this.keys, { ...session, lastSeen: this.now() }),
     ]);
+    await this.bumpVersion();
+    return { ok: true };
+  }
+
+  async sendAdminMessage(adminToken: string, content: string): Promise<CommandResult> {
+    const auth = await this.touchAdmin(adminToken);
+    if (!auth.ok) {
+      return auth;
+    }
+
+    const cleanContent = content.trim();
+    if (!cleanContent) {
+      return { ok: false, error: '메시지를 입력해주세요.' };
+    }
+
+    await this.cleanupExpiredMessages();
+    const message: ChatMessage = {
+      id: randomUUID(),
+      nickname: ADMIN_NICKNAME,
+      content: cleanContent,
+      color: ADMIN_COLOR,
+      createdAt: this.now(),
+    };
+    await this.redis.zadd(this.keys.messages, {
+      score: message.createdAt,
+      member: encodeRedisJson(message),
+    });
+    await this.trimHistory();
     await this.bumpVersion();
     return { ok: true };
   }

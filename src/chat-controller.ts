@@ -58,6 +58,10 @@ async function executeAction(
       });
       return result.ok === true ? success(store) : failure(store, result.error);
     }
+    case 'admin_send_message': {
+      const result = await store.sendAdminMessage(action.adminToken, action.content);
+      return result.ok === true ? success(store) : failure(store, result.error);
+    }
     case 'admin_login': {
       const result = await store.adminLogin(action.password);
       if (result.ok === false) {

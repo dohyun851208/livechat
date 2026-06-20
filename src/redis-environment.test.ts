@@ -14,4 +14,17 @@ describe('readRedisEnvironment', () => {
       prefix: 'livechat',
     });
   });
+
+  it('reads Vercel Marketplace Upstash environment values', () => {
+    expect(
+      readRedisEnvironment({
+        KV_REST_API_URL: 'https://example-kv.upstash.io',
+        KV_REST_API_TOKEN: 'kv-token',
+      }),
+    ).toEqual({
+      url: 'https://example-kv.upstash.io',
+      token: 'kv-token',
+      prefix: 'livechat',
+    });
+  });
 });

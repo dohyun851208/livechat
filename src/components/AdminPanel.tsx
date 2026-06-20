@@ -57,6 +57,7 @@ export function AdminPanel({
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -84,19 +85,26 @@ export function AdminPanel({
   const handleSendMessage = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const cleanMessage = messageInput.trim();
-    if (!cleanMessage) {
+    if (!cleanMessage || isSendingRef.current) {
       return;
     }
 
+    isSendingRef.current = true;
     setIsSending(true);
-    const result = await onSendMessage(cleanMessage);
-    setIsSending(false);
+    setMessageInput('');
+    setControlError('');
+    try {
+      const result = await onSendMessage(cleanMessage);
 
-    if (result.ok === true) {
-      setMessageInput('');
-      setControlError('');
-    } else {
-      setControlError(result.error);
+      if (result.ok === true) {
+        setControlError('');
+      } else {
+        setMessageInput(cleanMessage);
+        setControlError(result.error);
+      }
+    } finally {
+      isSendingRef.current = false;
+      setIsSending(false);
     }
   };
 
@@ -234,6 +242,7 @@ export function AdminPanel({
             placeholder="관리자 메시지를 입력하세요."
             value={messageInput}
             onChange={(event) => setMessageInput(event.target.value)}
+            disabled={isSending}
             maxLength={300}
           />
           <button

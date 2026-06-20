@@ -38,10 +38,12 @@ export function ChatScreen({
       : '채팅 서버 연결 대기 중';
   const [messageInput, setMessageInput] = useState('');
   const [sendError, setSendError] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [isChangingNickname, setIsChangingNickname] = useState(false);
   const [newNicknameInput, setNewNicknameInput] = useState('');
   const [nicknameError, setNicknameError] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef(false);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -50,16 +52,26 @@ export function ChatScreen({
   const handleSend = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const cleanMessage = messageInput.trim();
-    if (!cleanMessage || !chatActive) {
+    if (!cleanMessage || !chatActive || isSendingRef.current) {
       return;
     }
 
-    const result = await onSend(cleanMessage);
-    if (result.ok === true) {
-      setMessageInput('');
-      setSendError('');
-    } else {
-      setSendError(result.error);
+    isSendingRef.current = true;
+    setIsSending(true);
+    setMessageInput('');
+    setSendError('');
+    try {
+      const result = await onSend(cleanMessage);
+
+      if (result.ok === true) {
+        setSendError('');
+      } else {
+        setMessageInput(cleanMessage);
+        setSendError(result.error);
+      }
+    } finally {
+      isSendingRef.current = false;
+      setIsSending(false);
     }
   };
 
@@ -195,12 +207,12 @@ export function ChatScreen({
             placeholder="메시지를 입력하세요.."
             value={messageInput}
             onChange={(event) => setMessageInput(event.target.value)}
-            disabled={!chatActive}
+            disabled={!chatActive || isSending}
             maxLength={300}
           />
           <button
             type="submit"
-            disabled={!messageInput.trim() || !chatActive}
+            disabled={!messageInput.trim() || !chatActive || isSending}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 text-white p-2 rounded-full transition-colors shrink-0"
           >
             <Send size={18} className="translate-x-[1px] translate-y-[-1px]" />

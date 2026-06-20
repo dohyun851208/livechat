@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { THREE_HOURS_MS } from './chat-store-types';
+import { MESSAGE_RETENTION_MS } from './chat-store-types';
 import { RedisChatStore, type RedisChatClient, type RedisSortedSetMember } from './redis-chat-store';
 
 describe('RedisChatStore', () => {
@@ -32,7 +32,7 @@ describe('RedisChatStore', () => {
     ]);
   });
 
-  it('removes chat history after three hours', async () => {
+  it('removes chat history after ninety minutes', async () => {
     let currentTime = 1_000;
     const store = new RedisChatStore(new FakeRedisClient(() => currentTime), '8624', () => currentTime);
 
@@ -45,11 +45,11 @@ describe('RedisChatStore', () => {
     expect(
       await store.sendMessage({
         sessionId: join.sessionId,
-        content: '3시간 보존 메시지',
+        content: '90분 보존 메시지',
       }),
     ).toEqual({ ok: true });
 
-    currentTime += THREE_HOURS_MS;
+    currentTime += MESSAGE_RETENTION_MS;
     expect((await store.snapshot()).messages).toHaveLength(1);
 
     currentTime += 1;

@@ -1,6 +1,7 @@
+export const NINETY_MINUTES_MS = 90 * 60 * 1000;
 export const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
 export const SESSION_TTL_MS = THREE_HOURS_MS;
-export const MESSAGE_RETENTION_MS = THREE_HOURS_MS;
+export const MESSAGE_RETENTION_MS = NINETY_MINUTES_MS;
 export const ADMIN_TTL_MS = 6 * 60 * 60 * 1000;
 export const MAX_HISTORY = 2_000;
 export const MAX_ACTIVE_PARTICIPANTS = 30;

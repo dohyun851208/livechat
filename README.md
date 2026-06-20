@@ -20,5 +20,6 @@ This project uses Vercel static hosting for the Vite client and `api/chat.ts` fo
 - Output directory: `dist`
 - Optional persistence: set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
 - Admin password: set `ADMIN_PASSWORD` in Vercel project environment variables
+- Chat message retention: 90 minutes from each message timestamp
 
 Without Upstash Redis, Vercel serverless instances use temporary in-memory chat state.

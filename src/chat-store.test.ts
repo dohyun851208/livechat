@@ -72,7 +72,7 @@ describe('ChatStore', () => {
     expect(store.snapshot().pinnedNotice).toBeNull();
   });
 
-  it('keeps messages for three hours and removes older history', () => {
+  it('keeps messages for ninety minutes and removes older history', () => {
     let currentTime = 1_000;
     const store = new ChatStore('8624', () => currentTime);
     const join = store.join('시간확인');
@@ -84,11 +84,11 @@ describe('ChatStore', () => {
     expect(
       store.sendMessage({
         sessionId: join.sessionId,
-        content: '3시간 보존 메시지',
+        content: '90분 보존 메시지',
       }),
     ).toEqual({ ok: true });
 
-    currentTime += 3 * 60 * 60 * 1000;
+    currentTime += 90 * 60 * 1000;
     expect(store.snapshot().messages).toHaveLength(1);
 
     currentTime += 1;

@@ -88,7 +88,7 @@ export class RedisChatStore implements ChatStoreApi {
       return { ok: false, error: '이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.' };
     }
     if (activeSessions.length >= MAX_ACTIVE_PARTICIPANTS) {
-      return { ok: false, error: '참여 인원이 30명에 도달했습니다.' };
+      return { ok: false, error: '참여 인원이 40명에 도달했습니다.' };
     }
 
     const sessionId = randomUUID();

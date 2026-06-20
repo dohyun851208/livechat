@@ -124,16 +124,16 @@ describe('ChatStore', () => {
     expect(store.snapshot().messages).toEqual([]);
   });
 
-  it('allows thirty active participants and rejects the thirty first', () => {
+  it('allows forty active participants and rejects the forty first', () => {
     const store = new ChatStore();
 
-    for (let index = 1; index <= 30; index += 1) {
+    for (let index = 1; index <= 40; index += 1) {
       expect(store.join(`학생${index}`).ok).toBe(true);
     }
 
-    expect(store.join('학생31')).toEqual({
+    expect(store.join('학생41')).toEqual({
       ok: false,
-      error: '참여 인원이 30명에 도달했습니다.',
+      error: '참여 인원이 40명에 도달했습니다.',
     });
   });
 });

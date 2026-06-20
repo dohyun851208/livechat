@@ -4,7 +4,7 @@ export const SESSION_TTL_MS = THREE_HOURS_MS;
 export const MESSAGE_RETENTION_MS = NINETY_MINUTES_MS;
 export const ADMIN_TTL_MS = 6 * 60 * 60 * 1000;
 export const MAX_HISTORY = 2_000;
-export const MAX_ACTIVE_PARTICIPANTS = 30;
+export const MAX_ACTIVE_PARTICIPANTS = 40;
 export const ADMIN_NICKNAME = '관리자';
 export const ADMIN_COLOR = '#111827';
 

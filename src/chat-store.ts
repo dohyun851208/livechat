@@ -60,7 +60,7 @@ export class ChatStore {
       };
     }
     if (this.sessions.size >= MAX_ACTIVE_PARTICIPANTS) {
-      return { ok: false, error: '참여 인원이 30명에 도달했습니다.' };
+      return { ok: false, error: '참여 인원이 40명에 도달했습니다.' };
     }
 
     const sessionId = randomUUID();

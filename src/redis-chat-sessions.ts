@@ -35,6 +35,21 @@ export async function saveRedisAdmin(
   ]);
 }
 
+export async function resetRedisParticipantSessions(
+  redis: RedisChatClient,
+  keys: RedisChatKeys,
+): Promise<void> {
+  const sessionIds = await redis.zrange(keys.sessions, 0, -1);
+  if (sessionIds.length === 0) {
+    return;
+  }
+
+  await Promise.all([
+    redis.del(...sessionIds.map((sessionId) => keys.session(sessionId))),
+    redis.zrem(keys.sessions, ...sessionIds),
+  ]);
+}
+
 export async function cleanupExpiredRedisSessions(
   redis: RedisChatClient,
   keys: RedisChatKeys,

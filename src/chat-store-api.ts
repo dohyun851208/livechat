@@ -15,6 +15,7 @@ export interface ChatStoreApi {
   sendAdminMessage(adminToken: string, content: string): StoreResult<CommandResult>;
   adminLogin(password: string): StoreResult<AdminLoginResult>;
   clearChat(adminToken: string): StoreResult<CommandResult>;
+  resetNicknames(adminToken: string): StoreResult<CommandResult>;
   toggleAnonymous(adminToken: string, enabled: boolean): StoreResult<CommandResult>;
   pinNotice(adminToken: string, messageId: string): StoreResult<CommandResult>;
   unpinNotice(adminToken: string): StoreResult<CommandResult>;

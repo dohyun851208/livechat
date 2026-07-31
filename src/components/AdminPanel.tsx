@@ -3,6 +3,7 @@ import {
   ChevronUp,
   Lock,
   LogOut,
+  RotateCcw,
   Send,
   Settings,
   Trash2,
@@ -20,6 +21,7 @@ type AdminPanelProps = {
   readonly messages: readonly ChatMessage[];
   readonly anonymousMode: boolean;
   readonly onClear: () => Promise<CommandResult>;
+  readonly onResetNicknames: () => Promise<CommandResult>;
   readonly onToggleAnonymous: (enabled: boolean) => Promise<CommandResult>;
   readonly onToggleChatActive: (active: boolean) => Promise<CommandResult>;
   readonly onSendMessage: (content: string) => Promise<CommandResult>;
@@ -35,6 +37,7 @@ export function AdminPanel({
   messages,
   anonymousMode,
   onClear,
+  onResetNicknames,
   onToggleAnonymous,
   onToggleChatActive,
   onSendMessage,
@@ -52,7 +55,7 @@ export function AdminPanel({
       ? '채팅 서버 연결 완료'
       : '채팅 서버 연결 대기 중';
   const [controlError, setControlError] = useState('');
-  const [confirmingClear, setConfirmingClear] = useState(false);
+  const [pendingReset, setPendingReset] = useState<'chat' | 'nicknames' | null>(null);
   const [controlsOpen, setControlsOpen] = useState(true);
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -68,15 +71,19 @@ export function AdminPanel({
     setControlError(result.ok === true ? '' : result.error);
   };
 
-  const handleClear = () => {
-    if (!confirmingClear) {
-      setConfirmingClear(true);
+  const handleReset = (
+    target: 'chat' | 'nicknames',
+    command: () => Promise<CommandResult>,
+  ) => {
+    if (pendingReset !== target) {
+      setPendingReset(target);
+      setControlError('');
       return;
     }
     void handleCommand(async () => {
-      const result = await onClear();
+      const result = await command();
       if (result.ok === true) {
-        setConfirmingClear(false);
+        setPendingReset(null);
       }
       return result;
     });
@@ -184,25 +191,48 @@ export function AdminPanel({
                 </button>
               </div>
 
-              <button
-                onClick={handleClear}
-                className={cn(
-                  'w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border font-medium text-sm transition-colors',
-                  confirmingClear
-                    ? 'border-red-500 bg-red-600 text-white hover:bg-red-700'
-                    : 'border-red-200 text-red-600 hover:bg-red-50',
-                )}
-              >
-                <Trash2 size={16} />
-                {confirmingClear ? '한 번 더 누르면 삭제합니다' : '모든 채팅 초기화'}
-              </button>
-              {confirmingClear && (
+              <div className="grid grid-cols-2 gap-2">
                 <button
-                  onClick={() => setConfirmingClear(false)}
-                  className="w-full py-2 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-100"
+                  onClick={() => handleReset('chat', onClear)}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-lg border font-medium text-xs sm:text-sm transition-colors',
+                    pendingReset === 'chat'
+                      ? 'border-red-500 bg-red-600 text-white hover:bg-red-700'
+                      : 'border-red-200 text-red-600 hover:bg-red-50',
+                  )}
                 >
-                  삭제 취소
+                  <Trash2 size={15} />
+                  {pendingReset === 'chat' ? '한 번 더 눌러 삭제' : '모든 채팅 초기화'}
                 </button>
+                <button
+                  onClick={() => handleReset('nicknames', onResetNicknames)}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-lg border font-medium text-xs sm:text-sm transition-colors',
+                    pendingReset === 'nicknames'
+                      ? 'border-orange-500 bg-orange-500 text-white hover:bg-orange-600'
+                      : 'border-orange-200 text-orange-700 hover:bg-orange-50',
+                  )}
+                >
+                  <RotateCcw size={15} />
+                  {pendingReset === 'nicknames'
+                    ? '한 번 더 눌러 초기화'
+                    : '모든 닉네임 초기화'}
+                </button>
+              </div>
+              {pendingReset && (
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2">
+                  <p className="text-[11px] text-gray-500">
+                    {pendingReset === 'chat'
+                      ? '메시지와 고정 공지가 삭제됩니다.'
+                      : '현재 참여자는 새로고침 후 다시 입장해야 합니다.'}
+                  </p>
+                  <button
+                    onClick={() => setPendingReset(null)}
+                    className="shrink-0 text-xs font-medium text-gray-600 hover:text-gray-900"
+                  >
+                    취소
+                  </button>
+                </div>
               )}
             </>
           )}

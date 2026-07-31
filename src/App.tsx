@@ -121,6 +121,7 @@ export function App() {
           messages={chat.messages}
           anonymousMode={chat.anonymousMode}
           onClear={chat.clearChat}
+          onResetNicknames={chat.resetNicknames}
           onToggleAnonymous={chat.toggleAnonymous}
           onToggleChatActive={chat.toggleChatActive}
           onSendMessage={chat.sendAdminMessage}

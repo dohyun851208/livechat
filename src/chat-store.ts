@@ -173,6 +173,17 @@ export class ChatStore {
     return { ok: true };
   }
 
+  resetNicknames(adminToken: string): CommandResult {
+    const auth = this.touchAdmin(adminToken);
+    if (!auth.ok) {
+      return auth;
+    }
+    this.sessions.clear();
+    this.nicknameColors.clear();
+    this.bumpVersion();
+    return { ok: true };
+  }
+
   toggleAnonymous(adminToken: string, enabled: boolean): CommandResult {
     const auth = this.touchAdmin(adminToken);
     if (!auth.ok) {

@@ -50,6 +50,10 @@ export const ChatActionSchema = z.discriminatedUnion('action', [
     adminToken: TokenSchema,
   }),
   z.object({
+    action: z.literal('reset_nicknames'),
+    adminToken: TokenSchema,
+  }),
+  z.object({
     action: z.literal('toggle_anonymous'),
     adminToken: TokenSchema,
     enabled: z.boolean(),

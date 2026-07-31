@@ -41,6 +41,33 @@ describe('RedisChatStore', () => {
     });
   });
 
+  it('lets an admin reset participant nicknames without clearing messages', async () => {
+    const redis = new FakeRedisClient(() => 1_000);
+    const store = new RedisChatStore(redis);
+    const firstJoin = await store.join('민수');
+    expect(firstJoin.ok).toBe(true);
+    if (!firstJoin.ok) {
+      return;
+    }
+
+    expect(
+      await store.sendMessage({ sessionId: firstJoin.sessionId, content: '질문 있습니다' }),
+    ).toEqual({ ok: true });
+
+    const login = await store.adminLogin('8624');
+    expect(login.ok).toBe(true);
+    if (!login.ok) {
+      return;
+    }
+
+    expect(await store.resetNicknames(login.adminToken)).toEqual({ ok: true });
+    expect((await store.snapshot()).messages).toHaveLength(1);
+    expect((await store.join('민수')).ok).toBe(true);
+    expect(
+      (await store.sendMessage({ sessionId: firstJoin.sessionId, content: '이전 세션' })).ok,
+    ).toBe(false);
+  });
+
   it('lets an admin send messages from the admin panel', async () => {
     const store = new RedisChatStore(new FakeRedisClient(() => 1_000));
     const login = await store.adminLogin('8624');
@@ -137,6 +164,13 @@ class FakeRedisClient implements RedisChatClient {
       .map(([member]) => member);
     const normalizedStop = stop < 0 ? sorted.length + stop : stop;
     return sorted.slice(start, normalizedStop + 1);
+  }
+
+  async zrem(key: string, ...members: readonly string[]): Promise<void> {
+    const sortedSet = this.getSortedSet(key);
+    for (const member of members) {
+      sortedSet.delete(member);
+    }
   }
 
   async zremrangebyscore(key: string, min: number, max: number): Promise<void> {

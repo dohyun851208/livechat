@@ -38,6 +38,32 @@ describe('ChatStore', () => {
     });
   });
 
+  it('lets an admin reset participant nicknames without clearing messages', () => {
+    const store = new ChatStore();
+    const firstJoin = store.join('민수');
+    expect(firstJoin.ok).toBe(true);
+    if (!firstJoin.ok) {
+      return;
+    }
+
+    expect(
+      store.sendMessage({ sessionId: firstJoin.sessionId, content: '질문 있습니다' }),
+    ).toEqual({ ok: true });
+
+    const login = store.adminLogin('8624');
+    expect(login.ok).toBe(true);
+    if (!login.ok) {
+      return;
+    }
+
+    expect(store.resetNicknames(login.adminToken)).toEqual({ ok: true });
+    expect(store.snapshot().messages).toHaveLength(1);
+    expect(store.join('민수').ok).toBe(true);
+    expect(
+      store.sendMessage({ sessionId: firstJoin.sessionId, content: '이전 세션' }).ok,
+    ).toBe(false);
+  });
+
   it('reserves the admin nickname for admin messages', () => {
     const store = new ChatStore();
 

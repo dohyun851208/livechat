@@ -32,6 +32,7 @@ import {
 } from './redis-chat-messages.js';
 import {
   cleanupExpiredRedisSessions,
+  resetRedisParticipantSessions,
   saveRedisAdmin,
   saveRedisSession,
 } from './redis-chat-sessions.js';
@@ -212,6 +213,16 @@ export class RedisChatStore implements ChatStoreApi {
       this.redis.del(this.keys.messages),
       this.redis.hset(this.keys.state, { pinnedNoticeId: '' }),
     ]);
+    await this.bumpVersion();
+    return { ok: true };
+  }
+
+  async resetNicknames(adminToken: string): Promise<CommandResult> {
+    const auth = await this.touchAdmin(adminToken);
+    if (!auth.ok) {
+      return auth;
+    }
+    await resetRedisParticipantSessions(this.redis, this.keys);
     await this.bumpVersion();
     return { ok: true };
   }

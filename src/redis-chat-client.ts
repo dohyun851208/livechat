@@ -16,6 +16,7 @@ export interface RedisChatClient {
   incr(key: string): Promise<number>;
   zadd(key: string, member: RedisSortedSetMember): Promise<unknown>;
   zrange(key: string, start: number, stop: number): Promise<readonly string[]>;
+  zrem(key: string, ...members: readonly string[]): Promise<unknown>;
   zremrangebyscore(key: string, min: number, max: number): Promise<unknown>;
   zcard(key: string): Promise<number>;
   zremrangebyrank(key: string, start: number, stop: number): Promise<unknown>;
@@ -43,6 +44,9 @@ export function createRedisChatClient(redis: Redis): RedisChatClient {
     async zrange(key, start, stop) {
       const members = await redis.zrange(key, start, stop);
       return members.map(toStoredMember);
+    },
+    async zrem(key, ...members) {
+      return redis.zrem(key, ...members);
     },
     async zremrangebyscore(key, min, max) {
       return redis.zremrangebyscore(key, min, max);

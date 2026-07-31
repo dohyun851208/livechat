@@ -15,6 +15,8 @@ const EMPTY_SNAPSHOT: ChatSnapshot = {
   version: 0,
 };
 
+const PARTICIPANT_SESSION_STORAGE_KEY = 'livechat:participant-session:v1';
+
 export type ChatRoom = {
   readonly messages: readonly ChatMessage[];
   readonly anonymousMode: boolean;
@@ -28,6 +30,7 @@ export type ChatRoom = {
   readonly sendAdminMessage: (content: string) => Promise<CommandResult>;
   readonly adminLogin: (password: string) => Promise<CommandResult>;
   readonly clearChat: () => Promise<CommandResult>;
+  readonly resetNicknames: () => Promise<CommandResult>;
   readonly toggleAnonymous: (enabled: boolean) => Promise<CommandResult>;
   readonly pinNotice: (messageId: string) => Promise<CommandResult>;
   readonly unpinNotice: () => Promise<CommandResult>;
@@ -40,6 +43,7 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
   const [lastError, setLastError] = useState('');
   const sessionIdRef = useRef<string | null>(null);
   const adminTokenRef = useRef<string | null>(null);
+  const refreshInFlightRef = useRef(false);
 
   const applySuccessfulResponse = useCallback((response: SuccessfulApiResponse) => {
     setSnapshot(response.state);
@@ -48,6 +52,10 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
   }, []);
 
   const refresh = useCallback(async () => {
+    if (refreshInFlightRef.current) {
+      return;
+    }
+    refreshInFlightRef.current = true;
     try {
       const response = await fetchChatState();
       if (response.ok === true) {
@@ -59,6 +67,8 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
     } catch (error) {
       setIsConnected(false);
       setLastError(toErrorMessage(error));
+    } finally {
+      refreshInFlightRef.current = false;
     }
   }, [applySuccessfulResponse]);
 
@@ -82,6 +92,25 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
 
   const join = useCallback(
     async (nickname: string): Promise<CommandResult> => {
+      const storedSession = readStoredParticipantSession();
+      if (
+        storedSession &&
+        storedSession.nickname.toLowerCase() === nickname.trim().toLowerCase()
+      ) {
+        const resumed = await safePost({
+          action: 'change_nickname',
+          sessionId: storedSession.sessionId,
+          nickname,
+        });
+        if (resumed.ok === true) {
+          sessionIdRef.current = storedSession.sessionId;
+          writeStoredParticipantSession(storedSession.sessionId, nickname);
+          applySuccessfulResponse(resumed);
+          return { ok: true };
+        }
+        clearStoredParticipantSession();
+      }
+
       const response = await safePost({ action: 'join', nickname });
       if (response.ok === false) {
         return response;
@@ -90,6 +119,7 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
         return { ok: false, error: '채팅 서버가 입장 정보를 보내지 않았습니다.' };
       }
       sessionIdRef.current = response.sessionId;
+      writeStoredParticipantSession(response.sessionId, nickname);
       applySuccessfulResponse(response);
       return { ok: true };
     },
@@ -108,6 +138,7 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
         nickname,
       });
       if (response.ok === true) {
+        writeStoredParticipantSession(sessionId, nickname);
         applySuccessfulResponse(response);
       }
       return toCommandResult(response);
@@ -166,6 +197,22 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
       return { ok: false, error: '관리자 로그인이 필요합니다.' };
     }
     return postAdminAction({ action: 'clear_chat', adminToken }, applySuccessfulResponse);
+  }, [applySuccessfulResponse]);
+
+  const resetNicknames = useCallback(async (): Promise<CommandResult> => {
+    const adminToken = adminTokenRef.current;
+    if (!adminToken) {
+      return { ok: false, error: '관리자 로그인이 필요합니다.' };
+    }
+    const result = await postAdminAction(
+      { action: 'reset_nicknames', adminToken },
+      applySuccessfulResponse,
+    );
+    if (result.ok === true) {
+      sessionIdRef.current = null;
+      clearStoredParticipantSession();
+    }
+    return result;
   }, [applySuccessfulResponse]);
 
   const toggleAnonymous = useCallback(
@@ -231,6 +278,7 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
     sendAdminMessage,
     adminLogin,
     clearChat,
+    resetNicknames,
     toggleAnonymous,
     pinNotice,
     unpinNotice,
@@ -283,4 +331,52 @@ function toErrorMessage(error: unknown): string {
     return error.message;
   }
   return '채팅 서버에 연결할 수 없습니다.';
+}
+
+type StoredParticipantSession = {
+  readonly sessionId: string;
+  readonly nickname: string;
+};
+
+function readStoredParticipantSession(): StoredParticipantSession | null {
+  try {
+    const raw = window.localStorage.getItem(PARTICIPANT_SESSION_STORAGE_KEY);
+    if (!raw) {
+      return null;
+    }
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      !('sessionId' in parsed) ||
+      !('nickname' in parsed) ||
+      typeof parsed.sessionId !== 'string' ||
+      typeof parsed.nickname !== 'string'
+    ) {
+      clearStoredParticipantSession();
+      return null;
+    }
+    return { sessionId: parsed.sessionId, nickname: parsed.nickname };
+  } catch {
+    return null;
+  }
+}
+
+function writeStoredParticipantSession(sessionId: string, nickname: string): void {
+  try {
+    window.localStorage.setItem(
+      PARTICIPANT_SESSION_STORAGE_KEY,
+      JSON.stringify({ sessionId, nickname }),
+    );
+  } catch {
+    // Storage can be unavailable in private browsing; chat still works for this page.
+  }
+}
+
+function clearStoredParticipantSession(): void {
+  try {
+    window.localStorage.removeItem(PARTICIPANT_SESSION_STORAGE_KEY);
+  } catch {
+    // Ignore unavailable browser storage.
+  }
 }

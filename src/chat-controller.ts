@@ -77,6 +77,10 @@ async function executeAction(
       const result = await store.clearChat(action.adminToken);
       return result.ok === true ? success(store) : failure(store, result.error);
     }
+    case 'reset_nicknames': {
+      const result = await store.resetNicknames(action.adminToken);
+      return result.ok === true ? success(store) : failure(store, result.error);
+    }
     case 'toggle_anonymous': {
       const result = await store.toggleAnonymous(action.adminToken, action.enabled);
       return result.ok === true ? success(store) : failure(store, result.error);

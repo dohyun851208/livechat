@@ -77,6 +77,10 @@ class FallbackChatStore implements ChatStoreApi {
     return this.run((store) => store.clearChat(adminToken));
   }
 
+  resetNicknames(adminToken: string): Promise<CommandResult> {
+    return this.run((store) => store.resetNicknames(adminToken));
+  }
+
   toggleAnonymous(adminToken: string, enabled: boolean): Promise<CommandResult> {
     return this.run((store) => store.toggleAnonymous(adminToken, enabled));
   }

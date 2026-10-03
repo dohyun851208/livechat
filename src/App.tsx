@@ -35,6 +35,8 @@ export function App() {
   const handleStart = () => {
     setView('nickname_input');
     setErrorMsg('');
+    // Initialize the server while the participant types their name.
+    void chat.prepareRoom();
   };
 
   const handleJoin = async (event: FormEvent<HTMLFormElement>) => {
@@ -96,6 +98,7 @@ export function App() {
           onAdmin={() => {
             setView('admin_login');
             setErrorMsg('');
+            void chat.prepareRoom();
           }}
         />
       )}

@@ -1,5 +1,4 @@
 import { Redis } from '@upstash/redis';
-import { randomUUID } from 'node:crypto';
 import { FallbackChatStore } from './fallback-chat-store.js';
 import { ChatStore } from './chat-store.js';
 import type { ChatStoreApi } from './chat-store-api';
@@ -16,10 +15,7 @@ export function getGlobalChatStore(): ChatStoreApi {
 }
 
 function createChatStore(): ChatStoreApi {
-  // Production admin access requires an explicitly configured password.
-  const adminPassword = process.env.ADMIN_PASSWORD || (
-    process.env.NODE_ENV === 'production' ? randomUUID() : '8624'
-  );
+  const adminPassword = process.env.ADMIN_PASSWORD || '8624';
   const redisEnvironment = readRedisEnvironment(process.env);
   if (redisEnvironment) {
     return new FallbackChatStore(
@@ -28,6 +24,10 @@ function createChatStore(): ChatStoreApi {
           new Redis({
             url: redisEnvironment.url,
             token: redisEnvironment.token,
+            // The SDK's exponential retries delay entry by over four seconds
+            // when Redis is unreachable. The storage fallback handles failure.
+            retry: { retries: 0 },
+            signal: () => AbortSignal.timeout(2000),
           }),
         ),
         adminPassword,

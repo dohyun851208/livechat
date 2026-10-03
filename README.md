@@ -1,4 +1,4 @@
-# Live Class Chat
+# 실시간 채팅
 
 A narrow real-time classroom chat app for questions and feedback during a live class or presentation.
 
@@ -20,11 +20,12 @@ This project uses Vercel static hosting for the Vite client and `api/chat.ts` fo
 - Output directory: `dist`
 - Node.js version: 22.x
 - Shared storage: set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`, or the Vercel Marketplace `KV_REST_API_URL` and `KV_REST_API_TOKEN` pair
-- Admin password: set `ADMIN_PASSWORD` in Vercel project environment variables; production admin access is disabled without it
+- Admin password: defaults to `8624`; `ADMIN_PASSWORD` overrides the default when set
 - Chat message retention: 90 minutes from each message timestamp
 
 Without Upstash Redis, Vercel serverless instances use temporary in-memory chat state.
 For a classroom shared across devices, configure working Redis credentials. If configured Redis is unavailable, the existing temporary in-memory fallback is retained and a server warning is logged. That fallback is scoped to each serverless instance and cannot guarantee shared messages or session persistence. Correct the Redis settings and redeploy before relying on it for a class.
+Redis requests have a two-second timeout and do not retry failed connections. Opening the name-entry screen makes one read-only API request to initialize the server while the name is being typed.
 
 ## Validation
 

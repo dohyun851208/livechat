@@ -19,7 +19,7 @@ export function StartScreen({ onStart, onAdmin }: StartScreenProps) {
       <div className="text-center space-y-8 w-full max-w-xs">
         <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight text-gray-800 text-balance leading-tight">
-            실시간 수업 채팅
+            실시간 채팅
           </h1>
           <p className="text-sm text-gray-500">질문과 피드백을 자유롭게 남겨주세요.</p>
         </div>

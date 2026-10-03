@@ -27,6 +27,7 @@ export type ChatRoom = {
   readonly participantNeedsRejoin: boolean;
   readonly adminNeedsLogin: boolean;
   readonly logoutAdmin: () => void;
+  readonly prepareRoom: () => Promise<void>;
   readonly join: (nickname: string) => Promise<CommandResult>;
   readonly changeNickname: (nickname: string) => Promise<CommandResult>;
   readonly sendMessage: (content: string) => Promise<CommandResult>;
@@ -314,6 +315,7 @@ export function useChatRoom(pollingMode: ChatPollingMode): ChatRoom {
     lastError,
     participantNeedsRejoin,
     adminNeedsLogin,
+    prepareRoom: refresh,
     logoutAdmin: () => {
       adminTokenRef.current = null;
       setAdminNeedsLogin(false);

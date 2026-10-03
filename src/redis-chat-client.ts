@@ -1,4 +1,10 @@
 import { Redis } from '@upstash/redis';
+import {
+  CLAIM_SESSION_SCRIPT,
+  sessionClaimArguments,
+  type SessionClaim,
+  type SessionClaimResult,
+} from './redis-claim-session.js';
 
 export type RedisSortedSetMember = {
   readonly score: number;
@@ -10,6 +16,7 @@ export type RedisSetOptions = {
 };
 
 export interface RedisChatClient {
+  claimSession(claim: SessionClaim): Promise<SessionClaimResult>;
   get(key: string): Promise<string | null>;
   set(key: string, value: string, options?: RedisSetOptions): Promise<unknown>;
   del(...keys: readonly string[]): Promise<unknown>;
@@ -26,6 +33,17 @@ export interface RedisChatClient {
 
 export function createRedisChatClient(redis: Redis): RedisChatClient {
   return {
+    async claimSession(claim) {
+      const result = await redis.eval<unknown[], unknown>(CLAIM_SESSION_SCRIPT, [
+        claim.sessionsKey,
+        claim.versionKey,
+        `${claim.sessionKeyPrefix}${claim.session.id}`,
+      ], sessionClaimArguments(claim));
+      if (result !== 'ok' && result !== 'duplicate' && result !== 'full' && result !== 'expired') {
+        throw new Error('Unexpected Redis session reservation response');
+      }
+      return result;
+    },
     async get(key) {
       return toRedisString(await redis.get(key));
     },

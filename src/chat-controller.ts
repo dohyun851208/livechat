@@ -5,6 +5,7 @@ import {
   type ChatApiResponse,
 } from './chat-contract.js';
 import type { ChatStoreApi } from './chat-store-api';
+import type { CommandResult } from './types';
 
 export async function getChatStateResponse(
   store: ChatStoreApi,
@@ -39,7 +40,7 @@ async function executeAction(
     case 'join': {
       const result = await store.join(action.nickname);
       if (result.ok === false) {
-        return failure(store, result.error);
+        return failure(store, result);
       }
       return {
         ok: true,
@@ -49,23 +50,23 @@ async function executeAction(
     }
     case 'change_nickname': {
       const result = await store.changeNickname(action.sessionId, action.nickname);
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     case 'send_message': {
       const result = await store.sendMessage({
         sessionId: action.sessionId,
         content: action.content,
       });
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     case 'admin_send_message': {
       const result = await store.sendAdminMessage(action.adminToken, action.content);
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     case 'admin_login': {
       const result = await store.adminLogin(action.password);
       if (result.ok === false) {
-        return failure(store, result.error);
+        return failure(store, result);
       }
       return {
         ok: true,
@@ -75,27 +76,27 @@ async function executeAction(
     }
     case 'clear_chat': {
       const result = await store.clearChat(action.adminToken);
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     case 'reset_nicknames': {
       const result = await store.resetNicknames(action.adminToken);
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     case 'toggle_anonymous': {
       const result = await store.toggleAnonymous(action.adminToken, action.enabled);
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     case 'pin_notice': {
       const result = await store.pinNotice(action.adminToken, action.messageId);
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     case 'unpin_notice': {
       const result = await store.unpinNotice(action.adminToken);
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     case 'toggle_chat_active': {
       const result = await store.toggleChatActive(action.adminToken, action.active);
-      return result.ok === true ? success(store) : failure(store, result.error);
+      return result.ok === true ? success(store) : failure(store, result);
     }
     default:
       return assertNever(action);
@@ -111,11 +112,12 @@ async function success(store: ChatStoreApi): Promise<ChatApiResponse> {
 
 async function failure(
   store: ChatStoreApi,
-  error: string,
+  result: Extract<CommandResult, { ok: false }>,
 ): Promise<ChatApiResponse> {
   return {
     ok: false,
-    error,
+    error: result.error,
+    code: result.code,
     state: await store.snapshot(),
   };
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { MESSAGE_RETENTION_MS } from './chat-store-types';
 import { RedisChatStore, type RedisChatClient, type RedisSortedSetMember } from './redis-chat-store';
+import type { SessionClaim, SessionClaimResult } from './redis-claim-session';
+import { MAX_ACTIVE_PARTICIPANTS, SESSION_TTL_MS } from './chat-store-types';
 
 describe('RedisChatStore', () => {
   it('keeps messages available across store instances', async () => {
@@ -119,6 +121,31 @@ class FakeRedisClient implements RedisChatClient {
   private readonly sortedSets = new Map<string, Map<string, number>>();
 
   constructor(private readonly now: () => number) {}
+
+  async claimSession(claim: SessionClaim): Promise<SessionClaimResult> {
+    const sessions = this.getSortedSet(claim.sessionsKey);
+    const currentKey = `${claim.sessionKeyPrefix}${claim.session.id}`;
+    const current = this.strings.get(currentKey);
+    if (claim.mustExist && (!current || (current.expiresAt !== null && current.expiresAt <= this.now()))) {
+      return 'expired';
+    }
+    const active = [...sessions.keys()].flatMap((id) => {
+      const stored = this.strings.get(`${claim.sessionKeyPrefix}${id}`);
+      return stored && (stored.expiresAt === null || stored.expiresAt > this.now())
+        ? [JSON.parse(stored.value)] : [];
+    });
+    if (active.some((s) => s.id !== claim.session.id && s.nickname.toLowerCase() === claim.session.nickname.toLowerCase())) {
+      return 'duplicate';
+    }
+    if (!claim.mustExist && active.length >= MAX_ACTIVE_PARTICIPANTS) return 'full';
+    this.strings.set(currentKey, {
+      value: JSON.stringify(claim.session), expiresAt: this.now() + SESSION_TTL_MS,
+    });
+    sessions.set(claim.session.id, claim.session.lastSeen);
+    const version = Number(this.strings.get(claim.versionKey)?.value ?? '0');
+    this.strings.set(claim.versionKey, { value: String(version + 1), expiresAt: null });
+    return 'ok';
+  }
 
   async get(key: string): Promise<string | null> {
     const stored = this.strings.get(key);

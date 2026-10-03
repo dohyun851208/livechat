@@ -11,28 +11,43 @@ export default async function handler(
     return;
   }
 
-  const store = getGlobalChatStore();
-
-  if (request.method === 'GET') {
-    sendJson(response, 200, await getChatStateResponse(store));
+  if (request.method !== 'GET' && request.method !== 'POST') {
+    response.setHeader('Allow', 'GET, POST, OPTIONS');
+    sendJson(response, 405, {
+      ok: false,
+      error: '지원하지 않는 요청 방식입니다.',
+    });
     return;
   }
 
-  if (request.method === 'POST') {
+  try {
+    const store = getGlobalChatStore();
+    if (request.method === 'GET') {
+      sendJson(response, 200, await getChatStateResponse(store));
+      return;
+    }
+
     const body = await readJsonBody(request);
     const result = await handleChatAction(store, body);
     sendJson(response, result.ok ? 200 : 400, result);
-    return;
+  } catch {
+    sendJson(response, 503, {
+      ok: false,
+      error: '채팅 서버에 일시적으로 연결할 수 없습니다. 잠시 후 다시 시도해주세요.',
+    });
   }
-
-  sendJson(response, 405, {
-    ok: false,
-    error: '지원하지 않는 요청 방식입니다.',
-    state: await store.snapshot(),
-  });
 }
 
 async function readJsonBody(request: IncomingMessage): Promise<unknown> {
+  // Vercel may have already consumed the stream and populated request.body.
+  const parsedBody = (request as IncomingMessage & { body?: unknown }).body;
+  if (parsedBody !== undefined) {
+    if (typeof parsedBody === 'string' || Buffer.isBuffer(parsedBody)) {
+      return parseJson(parsedBody.toString());
+    }
+    return parsedBody;
+  }
+
   const chunks: Buffer[] = [];
   for await (const chunk of request) {
     if (Buffer.isBuffer(chunk)) {
@@ -46,7 +61,10 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
     return {};
   }
 
-  const rawBody = Buffer.concat(chunks).toString('utf8');
+  return parseJson(Buffer.concat(chunks).toString('utf8'));
+}
+
+function parseJson(rawBody: string): unknown {
   try {
     const parsed: unknown = JSON.parse(rawBody);
     return parsed;

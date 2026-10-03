@@ -3,8 +3,6 @@ import {
   ADMIN_COLOR,
   ADMIN_NICKNAME,
   ADMIN_TTL_MS,
-  MAX_ACTIVE_PARTICIPANTS,
-  SESSION_TTL_MS,
   type AdminLoginResult,
   type JoinResult,
   type ParticipantSession,
@@ -36,9 +34,6 @@ import {
   saveRedisAdmin,
   saveRedisSession,
 } from './redis-chat-sessions.js';
-import {
-  isNicknameInUse,
-} from './redis-chat-rules.js';
 import type { ChatMessage, ChatSnapshot, CommandResult } from './types.js';
 
 export { createRedisChatClient, type RedisChatClient, type RedisSortedSetMember };
@@ -84,30 +79,24 @@ export class RedisChatStore implements ChatStoreApi {
     if (cleanNickname === ADMIN_NICKNAME) {
       return { ok: false, error: '사용할 수 없는 이름입니다.' };
     }
-    const activeSessions = await this.getActiveSessions();
-    if (isNicknameInUse(activeSessions, cleanNickname)) {
+    const sessionId = randomUUID();
+    const result = await this.redis.claimSession({
+      sessionsKey: this.keys.sessions,
+      versionKey: this.keys.version,
+      sessionKeyPrefix: this.keys.session(''),
+      session: { id: sessionId, nickname: cleanNickname, lastSeen: this.now() },
+      mustExist: false,
+    });
+    if (result === 'duplicate') {
       return { ok: false, error: '이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.' };
     }
-    if (activeSessions.length >= MAX_ACTIVE_PARTICIPANTS) {
+    if (result === 'full') {
       return { ok: false, error: '참여 인원이 40명에 도달했습니다.' };
     }
-
-    const sessionId = randomUUID();
-    await saveRedisSession(this.redis, this.keys, {
-      id: sessionId,
-      nickname: cleanNickname,
-      lastSeen: this.now(),
-    });
-    await this.bumpVersion();
     return { ok: true, sessionId };
   }
 
   async changeNickname(sessionId: string, nickname: string): Promise<CommandResult> {
-    const session = await this.getSession(sessionId);
-    if (!session) {
-      return { ok: false, error: '입장 정보가 만료되었습니다. 다시 입장해주세요.' };
-    }
-
     const cleanNickname = nickname.trim();
     if (!cleanNickname) {
       return { ok: false, error: '이름을 입력해주세요.' };
@@ -115,27 +104,26 @@ export class RedisChatStore implements ChatStoreApi {
     if (cleanNickname === ADMIN_NICKNAME) {
       return { ok: false, error: '사용할 수 없는 이름입니다.' };
     }
-    const activeSessions = await this.getActiveSessions();
-    if (
-      cleanNickname.toLowerCase() !== session.nickname.toLowerCase() &&
-      isNicknameInUse(activeSessions, cleanNickname)
-    ) {
+    const result = await this.redis.claimSession({
+      sessionsKey: this.keys.sessions,
+      versionKey: this.keys.version,
+      sessionKeyPrefix: this.keys.session(''),
+      session: { id: sessionId, nickname: cleanNickname, lastSeen: this.now() },
+      mustExist: true,
+    });
+    if (result === 'expired') {
+      return { ok: false, error: '입장 정보가 만료되었습니다. 다시 입장해주세요.', code: 'SESSION_EXPIRED' };
+    }
+    if (result === 'duplicate') {
       return { ok: false, error: '이미 사용 중인 이름입니다. 다른 이름을 입력해주세요.' };
     }
-
-    await saveRedisSession(this.redis, this.keys, {
-      ...session,
-      nickname: cleanNickname,
-      lastSeen: this.now(),
-    });
-    await this.bumpVersion();
     return { ok: true };
   }
 
   async sendMessage(input: SendMessageInput): Promise<CommandResult> {
     const session = await this.getSession(input.sessionId);
     if (!session) {
-      return { ok: false, error: '입장 정보가 만료되었습니다. 다시 입장해주세요.' };
+      return { ok: false, error: '입장 정보가 만료되었습니다. 다시 입장해주세요.', code: 'SESSION_EXPIRED' };
     }
     const state = decodeChatState(await this.redis.hgetall(this.keys.state));
     if (!state.chatActive) {
@@ -282,22 +270,11 @@ export class RedisChatStore implements ChatStoreApi {
     return session;
   }
 
-  private async getActiveSessions(): Promise<readonly ParticipantSession[]> {
-    await this.cleanupExpiredSessions();
-    const sessionIds = await this.redis.zrange(this.keys.sessions, 0, -1);
-    const sessions = await Promise.all(
-      sessionIds.map(async (sessionId) =>
-        decodeParticipantSession(await this.redis.get(this.keys.session(sessionId))),
-      ),
-    );
-    return sessions.filter((session) => session !== null);
-  }
-
   private async touchAdmin(adminToken: string): Promise<CommandResult> {
     await this.cleanupExpiredSessions();
     const admin = decodeAdminSession(await this.redis.get(this.keys.admin(adminToken)));
     if (!admin) {
-      return { ok: false, error: '관리자 로그인이 만료되었습니다. 다시 로그인해주세요.' };
+      return { ok: false, error: '관리자 로그인이 만료되었습니다. 다시 로그인해주세요.', code: 'ADMIN_SESSION_EXPIRED' };
     }
     await saveRedisAdmin(this.redis, this.keys, { ...admin, lastSeen: this.now() });
     return { ok: true };

@@ -84,6 +84,7 @@ export const ChatApiResponseSchema = z.discriminatedUnion('ok', [
   z.object({
     ok: z.literal(false),
     error: z.string(),
+    code: z.enum(['SESSION_EXPIRED', 'ADMIN_SESSION_EXPIRED']).optional(),
     state: ChatSnapshotSchema.optional(),
   }),
 ]);
@@ -103,6 +104,7 @@ export type ChatApiResponse =
   | {
       readonly ok: false;
       readonly error: string;
+      readonly code?: 'SESSION_EXPIRED' | 'ADMIN_SESSION_EXPIRED';
       readonly state?: ChatSnapshot;
     };
 
@@ -118,6 +120,7 @@ export function toChatApiResponse(response: ParsedChatApiResponse): ChatApiRespo
   return {
     ok: false,
     error: response.error,
+    code: response.code,
     state: response.state ? toChatSnapshot(response.state) : undefined,
   };
 }

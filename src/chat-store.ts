@@ -77,7 +77,7 @@ export class ChatStore {
   changeNickname(sessionId: string, nickname: string): CommandResult {
     const session = this.getSession(sessionId);
     if (!session) {
-      return { ok: false, error: '입장 정보가 만료되었습니다. 다시 입장해주세요.' };
+      return { ok: false, error: '입장 정보가 만료되었습니다. 다시 입장해주세요.', code: 'SESSION_EXPIRED' };
     }
 
     const cleanNickname = nickname.trim();
@@ -107,7 +107,7 @@ export class ChatStore {
   sendMessage(input: SendMessageInput): CommandResult {
     const session = this.getSession(input.sessionId);
     if (!session) {
-      return { ok: false, error: '입장 정보가 만료되었습니다. 다시 입장해주세요.' };
+      return { ok: false, error: '입장 정보가 만료되었습니다. 다시 입장해주세요.', code: 'SESSION_EXPIRED' };
     }
     if (!this.chatActive) {
       return { ok: false, error: '관리자에 의해 채팅이 일시적으로 제한되었습니다.' };
@@ -285,7 +285,7 @@ export class ChatStore {
     this.cleanupExpiredSessions();
     const admin = this.adminSessions.get(adminToken);
     if (!admin) {
-      return { ok: false, error: '관리자 로그인이 만료되었습니다. 다시 로그인해주세요.' };
+      return { ok: false, error: '관리자 로그인이 만료되었습니다. 다시 로그인해주세요.', code: 'ADMIN_SESSION_EXPIRED' };
     }
     admin.lastSeen = this.now();
     return { ok: true };

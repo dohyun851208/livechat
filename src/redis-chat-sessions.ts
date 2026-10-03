@@ -15,7 +15,10 @@ export async function saveRedisSession(
   session: ParticipantSession,
 ): Promise<void> {
   await Promise.all([
-    redis.set(keys.session(session.id), encodeRedisJson(session), {
+    redis.set(keys.session(session.id), encodeRedisJson({
+      ...session,
+      normalizedNickname: session.nickname.toLowerCase(),
+    }), {
       ex: SESSION_TTL_SECONDS,
     }),
     redis.zadd(keys.sessions, { score: session.lastSeen, member: session.id }),

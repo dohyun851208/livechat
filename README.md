@@ -27,6 +27,10 @@ Without Upstash Redis, Vercel serverless instances use temporary in-memory chat 
 For a classroom shared across devices, configure working Redis credentials. If configured Redis is unavailable, the existing temporary in-memory fallback is retained and a server warning is logged. That fallback is scoped to each serverless instance and cannot guarantee shared messages or session persistence. Correct the Redis settings and redeploy before relying on it for a class.
 Redis requests have a two-second timeout and do not retry failed connections. Opening the name-entry screen makes one read-only API request to initialize the server while the name is being typed.
 
+## Public presentation
+
+In the administrator panel, click `보기용` to hide management controls, message input, and pin buttons for projection. Anonymous mode hides participant names in this view, including pinned notices. Click `보기용` again to return to management. The administrator session and one-second polling continue in either view.
+
 ## Validation
 
 Run `npm run lint`, `npm test`, and `npm run build` with Node.js 22.

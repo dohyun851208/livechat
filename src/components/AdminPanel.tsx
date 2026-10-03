@@ -1,6 +1,7 @@
 import {
   ChevronDown,
   ChevronUp,
+  Eye,
   Lock,
   LogOut,
   RotateCcw,
@@ -16,6 +17,8 @@ import { cn } from '../lib/cn';
 import type { ChatMessage, CommandResult } from '../types';
 import { AdminChatLine } from './AdminChatLine';
 import { AdminPinnedNotice } from './AdminPinnedNotice';
+import { ChatLine } from './ChatLine';
+import { PinnedNotice } from './PinnedNotice';
 
 type AdminPanelProps = {
   readonly messages: readonly ChatMessage[];
@@ -57,6 +60,7 @@ export function AdminPanel({
   const [controlError, setControlError] = useState('');
   const [pendingReset, setPendingReset] = useState<'chat' | 'nicknames' | null>(null);
   const [controlsOpen, setControlsOpen] = useState(true);
+  const [viewOnly, setViewOnly] = useState(false);
   const [messageInput, setMessageInput] = useState('');
   const [isSending, setIsSending] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -116,20 +120,40 @@ export function AdminPanel({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-gray-50">
+    <div className={cn('flex-1 flex flex-col h-full', viewOnly ? 'bg-white' : 'bg-gray-50')}>
       <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 z-10 sticky top-0 shadow-sm gap-2">
         <h3 className="font-bold text-gray-800 flex items-center gap-1.5 min-w-0">
           <Settings size={18} className="text-blue-600 shrink-0" />
-          <span className="whitespace-nowrap">관리자 패널</span>
+          <span className="whitespace-nowrap">{viewOnly ? '실시간 톡' : '관리자 패널'}</span>
           <span
             className={cn('w-2 h-2 rounded-full shrink-0', statusColor)}
             title={statusTitle}
           />
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setViewOnly((active) => !active);
+              setPendingReset(null);
+              setControlError('');
+            }}
+            aria-pressed={viewOnly}
+            title={viewOnly ? '관리 화면으로 돌아가기' : '공개 화면으로 보기'}
+            className={cn(
+              'text-xs flex items-center gap-1 px-2 py-1 rounded transition-colors',
+              viewOnly
+                ? 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-gray-100 text-gray-500 hover:text-gray-800',
+            )}
+          >
+            <Eye size={14} />
+            보기용
+          </button>
           <button
             onClick={() => setControlsOpen((open) => !open)}
-            className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 px-2 py-1 rounded bg-gray-100"
+            disabled={viewOnly}
+            className="text-xs text-gray-500 hover:text-gray-800 flex items-center gap-1 px-2 py-1 rounded bg-gray-100 disabled:opacity-40 disabled:cursor-default"
             title={controlsOpen ? '관리 도구 접기' : '관리 도구 열기'}
           >
             {controlsOpen ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -145,7 +169,9 @@ export function AdminPanel({
         </div>
       </div>
 
-      {pinnedNotice && (
+      {pinnedNotice && (viewOnly ? (
+        <PinnedNotice notice={pinnedNotice} anonymousMode={anonymousMode} />
+      ) : (
         <AdminPinnedNotice
           notice={pinnedNotice}
           anonymousMode={anonymousMode}
@@ -153,9 +179,9 @@ export function AdminPanel({
             void handleCommand(onUnpinNotice);
           }}
         />
-      )}
+      ))}
 
-      {(controlError || controlsOpen) && (
+      {!viewOnly && (controlError || controlsOpen) && (
         <div className="p-4 space-y-3 shrink-0 bg-white border-b border-gray-100">
           {controlError && <p className="text-xs text-red-500 font-medium">{controlError}</p>}
           {controlsOpen && (
@@ -239,14 +265,18 @@ export function AdminPanel({
         </div>
       )}
 
-      <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-widest bg-gray-100/50">
-        전체 채팅 미리보기
-      </div>
+      {!viewOnly && (
+        <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-widest bg-gray-100/50">
+          전체 채팅 미리보기
+        </div>
+      )}
       <div className="flex-1 overflow-y-auto p-4 space-y-1 pb-8 bg-white text-sm">
         {messages.length === 0 ? (
           <div className="pt-8 text-center text-gray-400">채팅 내용이 없습니다.</div>
         ) : (
-          messages.map((message) => (
+          messages.map((message) => viewOnly ? (
+            <ChatLine key={message.id} message={message} anonymousMode={anonymousMode} />
+          ) : (
             <AdminChatLine
               key={message.id}
               message={message}
@@ -261,29 +291,31 @@ export function AdminPanel({
         <div ref={messagesEndRef} />
       </div>
 
-      <div className="border-t border-gray-100 bg-white p-3 sm:pb-4 shrink-0">
-        <form
-          onSubmit={handleSendMessage}
-          className="relative flex items-center pr-1 bg-gray-50 border border-gray-200 rounded-full focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all"
-        >
-          <input
-            type="text"
-            className="flex-1 bg-transparent px-4 py-3 outline-none text-[15px] text-gray-800 placeholder:text-gray-400 min-w-0"
-            placeholder="관리자 메시지를 입력하세요."
-            value={messageInput}
-            onChange={(event) => setMessageInput(event.target.value)}
-            disabled={isSending}
-            maxLength={300}
-          />
-          <button
-            type="submit"
-            disabled={!messageInput.trim() || isSending}
-            className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 text-white p-2 rounded-full transition-colors shrink-0"
+      {!viewOnly && (
+        <div className="border-t border-gray-100 bg-white p-3 sm:pb-4 shrink-0">
+          <form
+            onSubmit={handleSendMessage}
+            className="relative flex items-center pr-1 bg-gray-50 border border-gray-200 rounded-full focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all"
           >
-            <Send size={18} className="translate-x-[1px] translate-y-[-1px]" />
-          </button>
-        </form>
-      </div>
+            <input
+              type="text"
+              className="flex-1 bg-transparent px-4 py-3 outline-none text-[15px] text-gray-800 placeholder:text-gray-400 min-w-0"
+              placeholder="관리자 메시지를 입력하세요."
+              value={messageInput}
+              onChange={(event) => setMessageInput(event.target.value)}
+              disabled={isSending}
+              maxLength={300}
+            />
+            <button
+              type="submit"
+              disabled={!messageInput.trim() || isSending}
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 text-white p-2 rounded-full transition-colors shrink-0"
+            >
+              <Send size={18} className="translate-x-[1px] translate-y-[-1px]" />
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-# 실시간 채팅
+# 실시간 톡
 
 A narrow real-time classroom chat app for questions and feedback during a live class or presentation.
 

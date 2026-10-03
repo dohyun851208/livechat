@@ -103,7 +103,7 @@ export function ChatScreen({
     <div className="flex-1 flex flex-col h-full bg-white relative">
       <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3 bg-white/80 backdrop-blur-sm z-10 sticky top-0 gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <h3 className="font-semibold text-gray-800 whitespace-nowrap">실시간 채팅</h3>
+          <h3 className="font-semibold text-gray-800 whitespace-nowrap">실시간 톡</h3>
           <span
             className={cn('w-2 h-2 rounded-full shrink-0', statusColor)}
             title={statusTitle}

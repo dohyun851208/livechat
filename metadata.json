@@ -1,5 +1,5 @@
 {
-  "name": "실시간 채팅",
+  "name": "실시간 톡",
   "description": "A very simple, lightweight, real-time chat application designed to be placed narrowly next to a presentation slide for receiving feedback and questions from students.",
   "requestFramePermissions": [],
   "majorCapabilities": []

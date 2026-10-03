@@ -24,7 +24,7 @@ This project uses Vercel static hosting for the Vite client and `api/chat.ts` fo
 - Chat message retention: 90 minutes from each message timestamp
 
 Without Upstash Redis, Vercel serverless instances use temporary in-memory chat state.
-For a classroom shared across devices, configure Redis. If configured Redis is unavailable, the API returns a recoverable 503 instead of silently creating separate chat rooms on each serverless instance.
+For a classroom shared across devices, configure working Redis credentials. If configured Redis is unavailable, the existing temporary in-memory fallback is retained and a server warning is logged. That fallback is scoped to each serverless instance and cannot guarantee shared messages or session persistence. Correct the Redis settings and redeploy before relying on it for a class.
 
 ## Validation
 

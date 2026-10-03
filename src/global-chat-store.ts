@@ -1,5 +1,6 @@
 import { Redis } from '@upstash/redis';
 import { randomUUID } from 'node:crypto';
+import { FallbackChatStore } from './fallback-chat-store.js';
 import { ChatStore } from './chat-store.js';
 import type { ChatStoreApi } from './chat-store-api';
 import { readRedisEnvironment } from './redis-environment.js';
@@ -21,16 +22,19 @@ function createChatStore(): ChatStoreApi {
   );
   const redisEnvironment = readRedisEnvironment(process.env);
   if (redisEnvironment) {
-    return new RedisChatStore(
-      createRedisChatClient(
-        new Redis({
-          url: redisEnvironment.url,
-          token: redisEnvironment.token,
-        }),
+    return new FallbackChatStore(
+      new RedisChatStore(
+        createRedisChatClient(
+          new Redis({
+            url: redisEnvironment.url,
+            token: redisEnvironment.token,
+          }),
+        ),
+        adminPassword,
+        () => Date.now(),
+        redisEnvironment.prefix,
       ),
-      adminPassword,
-      () => Date.now(),
-      redisEnvironment.prefix,
+      () => new ChatStore(adminPassword),
     );
   }
   return new ChatStore(adminPassword);
